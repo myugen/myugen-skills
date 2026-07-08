@@ -1,0 +1,15 @@
+{
+  "name": "myugen-skills",
+  "owner": {
+    "name": "Miguel Ignacio Cabrera San Gil",
+    "email": "miguelcabsan@gmail.com"
+  },
+  "plugins": [
+    {
+      "name": "myugen-skills",
+      "source": ".",
+      "description": "Personal skills for working with and inside organizations — knowledge capture, planning, and decision tracking.",
+      "version": "1.0.0"
+    }
+  ]
+}

@@ -1,10 +1,24 @@
 # Working in this repo
 
-This is a **hub of personal skills** for organizational workflows. Each top-level directory
-(other than `templates/`) is one skill. Skills follow the portable `SKILL.md` format and are
-meant to be usable by **any AI agent** and readable by **humans** — nothing here should be
-tied to one specific tool. When adding or editing skills, follow the conventions below so the
-hub stays consistent.
+This is a **hub of personal skills** for organizational workflows. Each directory under
+`skills/` is one skill. Skills follow the portable `SKILL.md` format and are meant to be
+usable by **any AI agent** and readable by **humans** — nothing here should be tied to one
+specific tool. When adding or editing skills, follow the conventions below so the hub stays
+consistent.
+
+The repo root also doubles as a **Claude Code plugin**:
+
+```
+.claude-plugin/
+  plugin.json         plugin manifest (name, description, version, author)
+  marketplace.json     lets `/plugin marketplace add` resolve this repo
+skills/                auto-discovered by the plugin — one folder per skill
+templates/              scaffolding for authoring new skills, not itself a skill
+```
+
+Skills under `skills/` are auto-discovered by the plugin — adding a new folder there is
+enough, no manifest edit required. `templates/skill-template/` intentionally lives outside
+`skills/` so it isn't picked up as a real (placeholder) skill.
 
 ## What a skill looks like
 
@@ -41,6 +55,6 @@ skill-name/
 ## When you finish adding a skill
 
 - Add a row to the Skills table in `README.md`.
-- No build step — the `SKILL.md` files are the artifact. For agents that load skills from a
-  directory, they're used via symlinks (see the README), so editing a file here takes effect
-  immediately.
+- No build step — the `SKILL.md` files are the artifact. Claude Code users pick up new skills
+  on their next plugin update; other agents load skills via symlinks (see the README), so
+  editing a file here takes effect immediately for them.

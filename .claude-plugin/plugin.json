@@ -1,0 +1,10 @@
+{
+  "name": "myugen-skills",
+  "description": "Personal skills for working with and inside organizations — knowledge capture, planning, and decision tracking.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Miguel Ignacio Cabrera San Gil"
+  },
+  "homepage": "https://github.com/myugen/myugen-skills",
+  "repository": "https://github.com/myugen/myugen-skills"
+}
