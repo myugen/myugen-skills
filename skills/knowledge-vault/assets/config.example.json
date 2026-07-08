@@ -3,5 +3,6 @@
   "repositories": {
     "/Users/you/dev/myugen": "Myugen",
     "/Users/you/dev/acme": "Acme Org"
-  }
+  },
+  "autoSession": true
 }

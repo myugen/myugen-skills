@@ -103,6 +103,14 @@ obsidian vault="$VAULT" create name="<name>" path="<folder>/<name>.md" template=
 - Always pass `path=` explicitly rather than relying on the default note location, so the note
   lands in the right folder.
 
+**Avoid dots in `name=`/`path=` other than the final `.md`.** Confirmed by testing: an embedded
+dot anywhere before the extension (e.g. a note titled `SESS-0002 my.repo 2026-07-08`) makes the
+CLI create a **directory** named after the full intended filename, with the actual note placed
+inside it truncated at the first dot — not the file you asked for. If a title is built from
+something that might contain a dot (a repo/directory name, a version string, …), replace dots
+with a safe character (e.g. `-`) before using it in `name=`/`path=`; dots are fine in the note's
+body text, just not in the filename-facing value.
+
 ### Fill in properties after creation
 
 A template doesn't know values ahead of time, so it leaves most fields blank. Fill them in

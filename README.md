@@ -59,6 +59,22 @@ depends on who's using them:
   done
   ```
 
+## Automatic capture (Claude Code)
+
+Skills are model-invoked — Claude decides whether to use one, which means during heads-down
+work it often just... doesn't, and nothing lands in the vault. Installing this repo as a
+Claude Code plugin also installs `hooks/` — a **Claude-only layer** that fires deterministically
+on session lifecycle events (not model discretion) to close that gap:
+
+- A factual session note (repo, branch, commits, duration) is **always** written when a
+  session ends, regardless of what the model did.
+- Claude is reminded at session start which vault this session is linked to, and nudged once
+  before ending a turn with uncommitted changes to persist any decisions/plans.
+
+See [`hooks/README.md`](./hooks/README.md) for exactly what's deterministic vs. model-authored,
+and how to disable it (`autoSession: false` in the vault config). The `knowledge-vault` skill
+itself stays fully agent-agnostic — the hooks are additive, Claude-specific plumbing on top.
+
 ## Adding a skill
 
 1. Copy the starter: `cp -r templates/skill-template skills/my-new-skill`.

@@ -13,12 +13,20 @@ The repo root also doubles as a **Claude Code plugin**:
   plugin.json         plugin manifest (name, description, version, author)
   marketplace.json     lets `/plugin marketplace add` resolve this repo
 skills/                auto-discovered by the plugin — one folder per skill
+hooks/                 Claude-only layer: deterministic session capture (see hooks/README.md)
 templates/              scaffolding for authoring new skills, not itself a skill
 ```
 
 Skills under `skills/` are auto-discovered by the plugin — adding a new folder there is
 enough, no manifest edit required. `templates/skill-template/` intentionally lives outside
 `skills/` so it isn't picked up as a real (placeholder) skill.
+
+**`hooks/` and its `scripts/` are Claude-specific**, unlike everything under `skills/`. They
+exist because skills are model-invoked (Claude decides whether to use one) and hooks are not
+(they fire on lifecycle events regardless). Keep this layer additive: it should reuse the
+skill's own scripts (`skills/knowledge-vault/scripts/resolve-vault.sh`, `next-id.sh`) rather
+than duplicating vault logic, and the skill itself must keep working standalone for non-Claude
+agents with no hooks layer at all.
 
 ## What a skill looks like
 

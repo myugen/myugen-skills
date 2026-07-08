@@ -54,7 +54,8 @@ Then edit it:
   "repositories": {
     "/Users/you/dev/myugen": "Myugen",
     "/Users/you/dev/acme": "Acme Org"
-  }
+  },
+  "autoSession": true
 }
 ```
 
@@ -64,6 +65,11 @@ Then edit it:
   directory (or any of its subdirectories) targets that vault instead of the default. Keys can
   be a repo root or any ancestor directory. When more than one key matches, the longest
   (most specific) one wins.
+- `autoSession` (optional, default `true`) — kill-switch for the Claude Code plugin's automatic
+  hooks (session-start context, the stop-time capture nudge, and the auto-written session
+  note). Set to `false` to disable all three without deleting this file. Only relevant if
+  you're using the plugin's hooks — see `hooks/README.md` at the repo root; it doesn't affect
+  manual use of the skill itself.
 
 See `references/cli-usage.md` for exactly how this file is read at the start of every vault
 operation.
