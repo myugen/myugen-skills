@@ -36,12 +36,39 @@ whatever the user happens to have open.
 
 ## Vault targeting
 
-Commands target whichever vault Obsidian most recently focused, by default. If more than one
-vault might be open, prefix every command with `vault=<name>` as the first parameter:
+Without `vault=`, commands target whichever vault Obsidian most recently focused, or the vault
+in the current working directory — **don't rely on this default**. This skill runs from
+inside arbitrary project repos, where that default frequently points at the wrong vault (or
+none), and there's no way to fix it from inside the repo without dirtying it with
+vault-selection config that doesn't belong there.
 
+Instead, resolve the vault from the user-level config at
+`${XDG_CONFIG_HOME:-$HOME/.config}/knowledge-vault/config.json` before doing anything else,
+and pass it explicitly on every command:
+
+```sh
+VAULT=$(scripts/resolve-vault.sh)   # or apply the rule below by hand
+obsidian vault="$VAULT" search query="test"
 ```
-obsidian vault="<name>" search query="test"
-```
+
+If that config file doesn't exist yet, stop and follow `references/setup.md` — don't guess a
+vault name.
+
+### Resolution rule (what `resolve-vault.sh` does)
+
+1. If the `OBSIDIAN_VAULT` environment variable is set, use it — a one-off override that wins
+   over everything else.
+2. Otherwise, find the working root: `git rev-parse --show-toplevel` if inside a repo, else the
+   current directory.
+3. Look up `config.json`'s `repositories` map (path → vault name) for keys that are a prefix
+   of that root. If more than one matches, the **longest** (most specific) one wins.
+4. If nothing matches, fall back to `config.json`'s `defaultVault`.
+
+The config file's full shape is documented in `references/setup.md`.
+
+Every example below assumes you've already run `VAULT=$(scripts/resolve-vault.sh)` and carries
+`vault="$VAULT"` accordingly — that's not optional decoration, it's the fix for the default
+described above.
 
 ## Universal flags worth knowing
 
@@ -57,7 +84,7 @@ obsidian vault="<name>" search query="test"
 ### Search (read, before every write)
 
 ```
-obsidian search query="<term>"
+obsidian vault="$VAULT" search query="<term>"
 ```
 
 Use before creating any Person/Team/Project/Foundation note, to avoid duplicating an existing
@@ -67,7 +94,7 @@ answer in what's actually in the vault rather than guessing.
 ### Create a note from a template
 
 ```
-obsidian create name="<name>" path="<folder>/<name>.md" template="<Type>" silent
+obsidian vault="$VAULT" create name="<name>" path="<folder>/<name>.md" template="<Type>" silent
 ```
 
 - `template=` pulls the skeleton from the corresponding file in `Templates/` (installed from
@@ -82,7 +109,7 @@ A template doesn't know values ahead of time, so it leaves most fields blank. Fi
 right after creating the note:
 
 ```
-obsidian property:set name="<property>" value="<value>" file="<name>"
+obsidian vault="$VAULT" property:set name="<property>" value="<value>" file="<name>"
 ```
 
 Repeat once per property. For AI artifacts, this always includes at minimum `id`, `aliases`,
@@ -92,7 +119,7 @@ ID.
 ### Append to an existing note
 
 ```
-obsidian append file="<name>" content="<text>"
+obsidian vault="$VAULT" append file="<name>" content="<text>"
 ```
 
 Use this to add a new entry to an existing Person, Team, or Project note rather than creating
@@ -101,13 +128,13 @@ a duplicate.
 ### Read a note
 
 ```
-obsidian read file="<name>"
+obsidian vault="$VAULT" read file="<name>"
 ```
 
 ### Check backlinks
 
 ```
-obsidian backlinks file="<name>"
+obsidian vault="$VAULT" backlinks file="<name>"
 ```
 
 Useful before superseding or renaming something, to see what currently points to it.
@@ -115,7 +142,7 @@ Useful before superseding or renaming something, to see what currently points to
 ### Tag overview
 
 ```
-obsidian tags sort=count counts
+obsidian vault="$VAULT" tags sort=count counts
 ```
 
 Useful occasionally to see which cross-cutting tags are actually in active use, and catch
@@ -123,22 +150,24 @@ near-duplicate tags (e.g. `q3-2026` vs `Q3-2026`) before they multiply.
 
 ## End-to-end example: logging a decision
 
-```
-obsidian search query="Ticketing Vendor"
+```sh
+VAULT=$(scripts/resolve-vault.sh)
+
+obsidian vault="$VAULT" search query="Ticketing Vendor"
 # → nothing found, safe to create
 
 # list AI/Decisions/ → highest existing is DEC-0007, so next is DEC-0008
 
-obsidian create name="DEC-0008 Choose Ticketing Vendor" \
+obsidian vault="$VAULT" create name="DEC-0008 Choose Ticketing Vendor" \
   path="AI/Decisions/DEC-0008 Choose Ticketing Vendor.md" \
   template="Decision" silent
 
-obsidian property:set name="id" value="DEC-0008" file="DEC-0008 Choose Ticketing Vendor"
-obsidian property:set name="aliases" value="[DEC-0008]" file="DEC-0008 Choose Ticketing Vendor"
-obsidian property:set name="status" value="final" file="DEC-0008 Choose Ticketing Vendor"
-obsidian property:set name="implements" value="[[PLAN-0004]]" file="DEC-0008 Choose Ticketing Vendor"
+obsidian vault="$VAULT" property:set name="id" value="DEC-0008" file="DEC-0008 Choose Ticketing Vendor"
+obsidian vault="$VAULT" property:set name="aliases" value="[DEC-0008]" file="DEC-0008 Choose Ticketing Vendor"
+obsidian vault="$VAULT" property:set name="status" value="final" file="DEC-0008 Choose Ticketing Vendor"
+obsidian vault="$VAULT" property:set name="implements" value="[[PLAN-0004]]" file="DEC-0008 Choose Ticketing Vendor"
 
 # and link back from the plan it implements
-obsidian property:set name="resulted_in" value="[[DEC-0008]]" file="PLAN-0004 Ticketing Vendor Evaluation"
+obsidian vault="$VAULT" property:set name="resulted_in" value="[[DEC-0008]]" file="PLAN-0004 Ticketing Vendor Evaluation"
 ```
 

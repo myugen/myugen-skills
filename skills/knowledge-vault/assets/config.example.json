@@ -1,0 +1,7 @@
+{
+  "defaultVault": "Personal Knowledge",
+  "repositories": {
+    "/Users/you/dev/myugen": "Myugen",
+    "/Users/you/dev/acme": "Acme Org"
+  }
+}

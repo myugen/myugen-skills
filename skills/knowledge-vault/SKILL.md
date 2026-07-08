@@ -23,11 +23,17 @@ Two things make this different from a normal file-write task:
 - Obsidian must be running with the vault open (the CLI talks to a live instance).
 - The `obsidian` CLI must be installed and paired. Run `obsidian help` if you're ever unsure
   a command exists — it's always up to date and is the source of truth over this skill.
-- If more than one vault is open, target this one explicitly by prefixing commands with
-  `vault="<name>"`. Fill in the actual vault name here once: `VAULT_NAME = <fill in>`.
-- One-time setup: copy the files in this skill's `assets/templates/` into the vault's
-  `Templates/` folder so `obsidian create ... template="Decision"` (etc.) works. Create that
-  folder first if it doesn't exist yet.
+- **Resolve the vault before doing anything else** — never rely on the CLI's own default
+  (whichever vault is currently focused, or the vault in the working directory), since this
+  skill runs from inside arbitrary project repos where that default is often wrong. Instead:
+  1. Read `${XDG_CONFIG_HOME:-$HOME/.config}/knowledge-vault/config.json`. If it doesn't
+     exist, stop and follow `references/setup.md` rather than guessing a vault.
+  2. Resolve the vault name for the current working directory (`scripts/resolve-vault.sh`
+     does this, or apply the rule by hand — see `references/cli-usage.md`).
+  3. Pass that name as `vault="<name>"` on **every** `obsidian` command for the rest of the
+     task.
+- One-time setup (CLI pairing, the config file, and installing templates into the vault) is
+  covered end-to-end in `references/setup.md` — run through it once per machine.
 
 ## Vault structure
 
@@ -117,13 +123,20 @@ its `updated` property to today. `created` is set once and never changes.
 
 ## Reference files
 
+- `references/setup.md` — one-time setup: enabling the CLI, verifying it, creating the vault
+  config file, and installing templates. Start here on a new machine or if vault resolution
+  is failing.
 - `references/schema.md` — full frontmatter property table for every note type, plus the
   shared status vocabulary. Read before creating or editing any note.
 - `references/naming-and-ids.md` — naming rules and ID-assignment mechanics. Read before
   creating any note in `AI/`.
 - `references/cli-usage.md` — complete `obsidian` CLI reference for working with this vault:
-  general syntax, targeting, and the specific commands and worked example used here. Read
-  whenever you need the actual command syntax.
+  general syntax, vault resolution, targeting, and the specific commands and worked example
+  used here. Read whenever you need the actual command syntax.
+- `assets/config.example.json` — example vault-resolution config; copy to
+  `~/.config/knowledge-vault/config.json` (see `references/setup.md`).
 - `assets/templates/` — the seven template files (`Person.md`, `Team.md`, `Project.md`,
   `Foundation.md`, `Plan.md`, `Decision.md`, `Session.md`) to install into the vault's
   `Templates/` folder.
+- `scripts/resolve-vault.sh` — prints the vault name to use for the current working
+  directory, per the config file's rules.
