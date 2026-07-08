@@ -30,14 +30,17 @@ using them:
   skill so edits here take effect immediately:
 
   ```sh
-  git clone git@github-personal:myugen/myugen-skills.git ~/dev/myugen/skills
-  ln -s ~/dev/myugen/skills/knowledge-vault ~/.claude/skills/knowledge-vault
+  # clone wherever you like, then set REPO to that path
+  git clone git@github.com:myugen/myugen-skills.git myugen-skills
+  REPO=$(pwd)/myugen-skills
+
+  ln -s "$REPO"/knowledge-vault ~/.claude/skills/knowledge-vault
   ```
 
   To link every skill at once into that directory:
 
   ```sh
-  for dir in ~/dev/myugen/skills/*/; do
+  for dir in "$REPO"/*/; do
     name=$(basename "$dir")
     [ -f "$dir/SKILL.md" ] && ln -sfn "$dir" ~/.claude/skills/"$name"
   done
