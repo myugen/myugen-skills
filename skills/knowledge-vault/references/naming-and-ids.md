@@ -42,11 +42,20 @@ prefix — e.g. `AI/Decisions/DEC-0007 Choose Ticketing Vendor.md`.
 Set the ID alone as an `aliases` entry in frontmatter:
 
 ```yaml
-aliases: [DEC-0007]
+aliases:
+  - DEC-0007
 ```
 
 This lets other notes link to it with the short form `[[DEC-0007]]` even though the actual
-filename includes the full title. Obsidian resolves aliases to the real file automatically.
+filename includes the full title. Obsidian resolves aliases to the real file automatically —
+but only if `aliases` is an actual YAML list. Setting it via the CLI needs `type=list` or it
+lands as a string and alias resolution silently fails:
+
+```
+obsidian vault="$VAULT" property:set name="aliases" value="DEC-0007" type=list file="<name>"
+```
+
+See `references/cli-usage.md` for the full `property:set` reference.
 
 ### Example
 

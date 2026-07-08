@@ -116,6 +116,18 @@ Repeat once per property. For AI artifacts, this always includes at minimum `id`
 and `status` right after creation — see `references/naming-and-ids.md` for how to compute the
 ID.
 
+**List-valued properties need `type=list`.** `aliases`, `related`, and `members` are lists in
+the schema (see `references/schema.md`), but a plain `property:set` writes the value as a
+literal string (e.g. `aliases: "[DEC-0008]"`), which silently breaks alias resolution and
+backlinks. Pass `type=list` and a bare value (no brackets):
+
+```
+obsidian vault="$VAULT" property:set name="aliases" value="DEC-0008" type=list file="<name>"
+```
+
+Confirmed by testing: without `type=list` the property lands as a string; with it, it lands as
+a proper YAML list entry.
+
 ### Append to an existing note
 
 ```
@@ -163,7 +175,7 @@ obsidian vault="$VAULT" create name="DEC-0008 Choose Ticketing Vendor" \
   template="Decision" silent
 
 obsidian vault="$VAULT" property:set name="id" value="DEC-0008" file="DEC-0008 Choose Ticketing Vendor"
-obsidian vault="$VAULT" property:set name="aliases" value="[DEC-0008]" file="DEC-0008 Choose Ticketing Vendor"
+obsidian vault="$VAULT" property:set name="aliases" value="DEC-0008" type=list file="DEC-0008 Choose Ticketing Vendor"
 obsidian vault="$VAULT" property:set name="status" value="final" file="DEC-0008 Choose Ticketing Vendor"
 obsidian vault="$VAULT" property:set name="implements" value="[[PLAN-0004]]" file="DEC-0008 Choose Ticketing Vendor"
 
