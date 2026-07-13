@@ -74,6 +74,9 @@ Full property table per note type. All properties live in YAML frontmatter. Prop
 
 ## Session (`AI/Sessions/`)
 
+**Written automatically by the `SessionEnd` hook — you don't create or set these properties
+yourself.** Listed here for completeness (e.g. if you need to read or enrich one).
+
 | Property   | Required | Notes                                                    |
 |------------|----------|--------------------------------------------------------------|
 | `id`       | yes      | `SESS-NNNN`                                                   |

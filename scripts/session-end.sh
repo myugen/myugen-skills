@@ -4,6 +4,17 @@
 # to the vault itself this session. Pure side effect: SessionEnd cannot reach the model, and
 # this script must not either (no prompt/response text is ever included).
 #
+# This is the ONLY place SESS- notes get created — the knowledge-vault skill instructs the
+# model never to create one itself (see SKILL.md's "Session notes are automatic"), so a
+# session should end up with exactly one SESS- note. Two safeguards enforce that here:
+#   - idempotent by session_id: if a note already records this session_id (e.g. SessionEnd
+#     fired twice for the same session), refresh it instead of creating a second one.
+#   - collision-safe creation: next-id.sh doesn't reserve the ID it hands out (two sessions
+#     ending at nearly the same instant can be handed the same NEXT_ID), and `obsidian create`
+#     doesn't error on that — it silently auto-suffixes the filename. This script reads back
+#     the path `create` actually used rather than assuming the one it asked for, so every
+#     follow-up command targets the real file.
+#
 # Reads the SessionEnd event JSON from stdin. Always exits 0 — must never break session
 # teardown; failures are swallowed to stderr for the debug log.
 
@@ -99,6 +110,34 @@ fi
 
 ENDED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
+cleanup_state() {
+  if [ -n "${CLAUDE_PLUGIN_DATA:-}" ] && [ -n "$SESSION_ID" ]; then
+    rm -f "$CLAUDE_PLUGIN_DATA/sessions/$SESSION_ID.json" 2>/dev/null
+  fi
+}
+
+# Idempotency guard: if a SESS- note already records this exact session_id (e.g. SessionEnd
+# fired more than once for the same session), don't write a second one — just refresh its
+# `updated` date and stop. The note body always contains a literal "session_id: <id>" line, so
+# a plain content search finds it. `search --format=json` returns a JSON array of matching
+# paths (or the plain-text string "No matches found." when there's nothing).
+if [ -n "$SESSION_ID" ]; then
+  SEARCH_OUT="$(obsidian vault="$VAULT" search query="$SESSION_ID" path="AI/Sessions" format=json 2>/dev/null)"
+  EXISTING_PATH="$(python3 -c "
+import json, sys
+try:
+    matches = json.loads(sys.argv[1])
+    print(matches[0] if isinstance(matches, list) and matches else '')
+except Exception:
+    print('')
+" "$SEARCH_OUT" 2>/dev/null)"
+  if [ -n "$EXISTING_PATH" ]; then
+    obsidian vault="$VAULT" property:set name="updated" value="$TODAY" type=date path="$EXISTING_PATH" >/dev/null 2>&1
+    cleanup_state
+    exit 0
+  fi
+fi
+
 NEXT_ID="$("$KV_SCRIPTS/next-id.sh" SESS 2>/dev/null)"
 [ -n "$NEXT_ID" ] || exit 0
 
@@ -112,11 +151,20 @@ SAFE_REPO_NAME="$(printf '%s' "$REPO_NAME" | tr '.' '-')"
 TITLE="$NEXT_ID $SAFE_REPO_NAME $TODAY"
 NOTE_PATH="AI/Sessions/$TITLE.md"
 
-obsidian vault="$VAULT" create name="$TITLE" path="$NOTE_PATH" template="Session" silent >/dev/null 2>&1 || exit 0
+# `next-id.sh` reserves nothing — it just scans the folder (see its header comment) — so two
+# sessions ending at nearly the same moment can compute the same NEXT_ID. `obsidian create`
+# doesn't error or overwrite on a name collision, it auto-suffixes ("... 1.md", "... 2.md", …)
+# and reports the path it actually used. Read that back instead of assuming $TITLE/$NOTE_PATH,
+# so the property:set/append calls below always target the file that was really created.
+CREATE_OUT="$(obsidian vault="$VAULT" create name="$TITLE" path="$NOTE_PATH" template="Session" silent 2>&1)"
+[ $? -eq 0 ] || exit 0
 
-obsidian vault="$VAULT" property:set name="id" value="$NEXT_ID" file="$TITLE" >/dev/null 2>&1
-obsidian vault="$VAULT" property:set name="aliases" value="$NEXT_ID" type=list file="$TITLE" >/dev/null 2>&1
-obsidian vault="$VAULT" property:set name="date" value="$TODAY" type=date file="$TITLE" >/dev/null 2>&1
+ACTUAL_PATH="$(printf '%s\n' "$CREATE_OUT" | sed -n 's/^Created: //p' | head -n1)"
+[ -n "$ACTUAL_PATH" ] || ACTUAL_PATH="$NOTE_PATH"
+
+obsidian vault="$VAULT" property:set name="id" value="$NEXT_ID" path="$ACTUAL_PATH" >/dev/null 2>&1
+obsidian vault="$VAULT" property:set name="aliases" value="$NEXT_ID" type=list path="$ACTUAL_PATH" >/dev/null 2>&1
+obsidian vault="$VAULT" property:set name="date" value="$TODAY" type=date path="$ACTUAL_PATH" >/dev/null 2>&1
 
 BODY="- repo: $REPO_NAME
 - branch: $BRANCH
@@ -129,11 +177,7 @@ BODY="- repo: $REPO_NAME
 
 Recorded automatically by the knowledge-vault plugin hooks (metadata only — no prompt/response content)."
 
-obsidian vault="$VAULT" append file="$TITLE" content="$BODY" >/dev/null 2>&1
+obsidian vault="$VAULT" append path="$ACTUAL_PATH" content="$BODY" >/dev/null 2>&1
 
-# Clean up the stashed start-of-session state.
-if [ -n "${CLAUDE_PLUGIN_DATA:-}" ] && [ -n "$SESSION_ID" ]; then
-  rm -f "$CLAUDE_PLUGIN_DATA/sessions/$SESSION_ID.json" 2>/dev/null
-fi
-
+cleanup_state
 exit 0

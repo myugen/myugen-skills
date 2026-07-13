@@ -27,6 +27,11 @@ These are numerous and referenced by ID more often than by title, so they get an
 Filename format: `<PREFIX>-<NNNN> Short Title.md`, zero-padded to 4 digits, sequential per
 prefix — e.g. `AI/Decisions/DEC-0007 Choose Ticketing Vendor.md`.
 
+**`SESS-` is the exception: you never assign this ID yourself.** The `SessionEnd` hook assigns
+`SESS-` IDs and creates the note automatically at the end of every session (title format
+`SESS-NNNN <repo> <date>`) — see `SKILL.md`'s "Session notes are automatic" workflow. Everything
+below in this file (computing the next ID, the alias trick) applies to `PLAN-` and `DEC-` only.
+
 ### Determining the next ID
 
 1. List the target folder (e.g. `AI/Decisions/`) — a plain directory listing is fine here;

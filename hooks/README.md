@@ -67,6 +67,26 @@ vault's session log skimmable rather than a transcript dump.
 
 Never launches Obsidian just to log — if it's not already running, this no-ops.
 
+**This is the only source of `SESS-` notes.** The `knowledge-vault` skill instructs the model
+never to create a Session note itself (see `SKILL.md`'s "Session notes are automatic"), so a
+session should always end with exactly one note. The script itself guards against the two ways
+that could still slip:
+
+- **Idempotent by `session_id`.** Before creating, it searches `AI/Sessions/` for a note whose
+  body already contains this session's `session_id` (every note includes one). If found, it
+  refreshes that note's `updated` date instead of writing a second one — covers `SessionEnd`
+  firing more than once for the same session.
+- **Collision-safe creation.** `next-id.sh` hands out the next ID by scanning the folder, with
+  no locking — two sessions ending close together can be handed the same ID. `obsidian create`
+  doesn't error on a resulting name collision, it silently auto-suffixes the file (`... 1.md`).
+  The script reads back the path `create` actually reports and uses that for every follow-up
+  `property:set`/`append`, instead of assuming the name it originally asked for.
+
+Note that a `session_id` changes across some session boundaries (e.g. auto-compaction) even
+when a human would call it "the same work session" — so this guards against literal double-fire
+for one `session_id`, not against getting more than one note across a day of resumes. That's a
+known, accepted shape of the log (one accurate note per Claude Code session), not a bug.
+
 ## Known CLI gotcha this code works around
 
 The `obsidian create` CLI creates a **directory** instead of a file if the note's `name=`/

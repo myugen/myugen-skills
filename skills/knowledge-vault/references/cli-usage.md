@@ -87,9 +87,43 @@ described above.
 obsidian vault="$VAULT" search query="<term>"
 ```
 
-Use before creating any Person/Team/Project/Foundation note, to avoid duplicating an existing
-one. Also use before answering questions about a person/team/project/process — ground the
-answer in what's actually in the vault rather than guessing.
+Use before creating **any** note you create yourself — Person/Team/Project/Foundation as well
+as Plan/Decision — to avoid duplicating one that already exists. Also use before answering
+questions about a person/team/project/process — ground the answer in what's actually in the
+vault rather than guessing.
+
+Useful options and related commands:
+
+- `path=<folder>` — limit the search to one folder, e.g. `path="AI/Decisions"` when you only
+  care about existing decisions.
+- `limit=<n>` — cap the number of results.
+- `format=json` — structured output, easier to check "did anything come back" programmatically
+  than parsing text.
+- `total` — just the match count.
+- `search:context query="<term>"` — same search, but returns matching lines with surrounding
+  context instead of just filenames. Use this when a plain `search` returns several hits and
+  you need to tell a real match from a coincidental word overlap, without opening every file.
+- `files folder="<path>"` — lists filenames in a folder without searching content; useful when
+  you know roughly where a note would live (e.g. `files folder="AI/Decisions"`) and just want to
+  skim titles for a near-duplicate, or `files folder="AI/Sessions"` to find a specific session
+  note by its `SESS-NNNN <repo> <date>` title.
+
+**Worked example — match found, update instead of creating:**
+
+```sh
+obsidian vault="$VAULT" search query="Ticketing Vendor"
+# → hits: "Projects/Ticketing Platform.md", one line mentioning a vendor decision
+
+obsidian vault="$VAULT" search:context query="Ticketing Vendor"
+# → confirms "Projects/Ticketing Platform.md" already has a "## Vendor decision" section —
+#   this is the same topic, not a coincidence. Update it rather than creating a new note.
+
+obsidian vault="$VAULT" read file="Ticketing Platform"
+# → read the existing content before appending, so you don't restate what's already there
+
+obsidian vault="$VAULT" append file="Ticketing Platform" content="..."
+obsidian vault="$VAULT" property:set name="updated" value="2026-07-13" type=date file="Ticketing Platform"
+```
 
 ### Create a note from a template
 
@@ -110,6 +144,17 @@ inside it truncated at the first dot — not the file you asked for. If a title 
 something that might contain a dot (a repo/directory name, a version string, …), replace dots
 with a safe character (e.g. `-`) before using it in `name=`/`path=`; dots are fine in the note's
 body text, just not in the filename-facing value.
+
+**`overwrite` does not overwrite.** Confirmed by testing: `create ... overwrite` against a
+`name=`/`path=` that already exists does not replace the existing file — it silently
+auto-suffixes the new file's name instead (`... 1.md`, `... 2.md`, …), the exact same behavior
+as a plain `create` collision without the flag. You end up with both the original note and a
+near-duplicate, not a replacement. There is currently no CLI command that reliably overwrites
+an existing note's content — if a note's body needs correcting rather than appending to (see
+"Append/prepend" below), edit it in the Obsidian app directly. If you do end up with a stray
+auto-suffixed file from this, `delete` the wrong one and `rename` the right one back to the
+intended name (in that order, since `file=` matches by exact name and a suffixed file won't
+collide with the lookup).
 
 ### Fill in properties after creation
 
@@ -136,14 +181,26 @@ obsidian vault="$VAULT" property:set name="aliases" value="DEC-0008" type=list f
 Confirmed by testing: without `type=list` the property lands as a string; with it, it lands as
 a proper YAML list entry.
 
-### Append to an existing note
+Related commands for reading/removing a single property without reading the whole note:
+
+```
+obsidian vault="$VAULT" property:read name="<property>" file="<name>"
+obsidian vault="$VAULT" property:remove name="<property>" file="<name>"
+```
+
+### Append/prepend to an existing note
 
 ```
 obsidian vault="$VAULT" append file="<name>" content="<text>"
+obsidian vault="$VAULT" prepend file="<name>" content="<text>"
 ```
 
-Use this to add a new entry to an existing Person, Team, or Project note rather than creating
-a duplicate.
+Use these to add content to an existing note rather than creating a duplicate — `append` adds
+to the end (the common case, e.g. a new entry on a Person/Team/Project note), `prepend` to the
+start. **Both only add text — there is no CLI command to edit or replace existing body prose in
+place.** If existing content is wrong rather than just incomplete, edit it in the Obsidian app
+directly — `create ... overwrite` is *not* a substitute; see the `overwrite` gotcha above, it
+doesn't actually overwrite.
 
 ### Read a note
 
@@ -167,6 +224,23 @@ obsidian vault="$VAULT" tags sort=count counts
 
 Useful occasionally to see which cross-cutting tags are actually in active use, and catch
 near-duplicate tags (e.g. `q3-2026` vs `Q3-2026`) before they multiply.
+
+### Locating the automatic Session note
+
+Session notes (`SESS-`) are written by the `SessionEnd` hook, not by you (see `SKILL.md`'s
+"Session notes are automatic" workflow) — but you may still need to find one, e.g. to append a
+summary to a past session. Two ways to find it:
+
+```sh
+obsidian vault="$VAULT" files folder="AI/Sessions"
+# titles are "SESS-NNNN <repo> <date>" — skim for the repo/date you're after
+
+obsidian vault="$VAULT" search query="<session_id>"
+# the note's body always includes "session_id: <id>" — exact-match search if you have the ID
+```
+
+Never create a new `SESS-` note yourself, even if you can't find the one you're looking for —
+capture the substance as a Decision or Plan note instead.
 
 ## End-to-end example: logging a decision
 

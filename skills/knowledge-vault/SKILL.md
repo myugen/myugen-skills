@@ -45,7 +45,8 @@ Projects/       one note per initiative/project
 AI/
   ├─ Plans/       agent-authored plans
   ├─ Decisions/   intermediate and final decisions
-  └─ Sessions/    working notes / scratch reasoning worth keeping
+  └─ Sessions/    factual session records — written automatically by the SessionEnd hook,
+                  not by you (see "Session notes are automatic" below)
 Templates/      template files backing `obsidian create ... template=`
 ```
 
@@ -59,7 +60,9 @@ type. Read it before creating or editing a note if you're not already familiar w
   refer to it — e.g. `People/Jana Smith.md`. These are linked by name, so the filename *is*
   the link target.
 - **AI artifacts** (`Plans/`, `Decisions/`, `Sessions/`): ID-prefixed — `PLAN-`, `DEC-`,
-  `SESS-` — since these are numerous and referenced by ID more than by title.
+  `SESS-` — since these are numerous and referenced by ID more than by title. You assign
+  `PLAN-`/`DEC-` IDs yourself when creating those notes; `SESS-` IDs are assigned by the
+  `SessionEnd` hook, since you never create Session notes directly (see below).
 
 Full mechanics for assigning and linking IDs (numbering, zero-padding, aliases) are in
 `references/naming-and-ids.md` — read it before creating any note in `AI/`.
@@ -68,10 +71,24 @@ Full mechanics for assigning and linking IDs (numbering, zero-padding, aliases) 
 
 ### 1. Search before you write
 
-Before creating a Person, Team, Project, or Foundation note, search the vault for an existing
-one first. If it already exists, update/append to it rather than creating a duplicate — the
-vault's value comes from having exactly one note per real-world entity that accumulates
-context over time.
+**This applies to every note type you create yourself — Person, Team, Project, Foundation,
+Plan, and Decision — not just the entity types.** Before creating any of these, search first to
+confirm one doesn't already exist:
+
+1. Search by the obvious term: `obsidian vault="$VAULT" search query="<term>"`. If you expect
+   more than a couple of hits, `search:context` shows matching lines in context, which makes it
+   easier to tell a real match from a coincidental word overlap.
+2. For Plans/Decisions, also try the topic in different phrasings ("Ticketing Vendor" vs
+   "Ticketing Platform vendor") — a differently-titled existing note about the same thing is a
+   duplicate you'd otherwise miss. If in doubt, list the folder (`AI/Plans/`, `AI/Decisions/`)
+   and skim titles rather than trusting a single query.
+3. Treat any note that's clearly about the same real-world entity or the same decision/plan
+   topic as a match, even if the title isn't identical — don't require an exact string match to
+   count something as "already exists."
+
+**If a match is found, update it in place — see "Updating an existing note" below — instead of
+creating a new note.** The vault's value comes from having exactly one note per real-world
+entity (and one Plan/Decision per topic) that accumulates context over time.
 
 This applies to reading, too: before answering questions about a person, team, project, or
 organization-specific process, search the vault first rather than relying on general knowledge or
@@ -84,7 +101,7 @@ known properties and link outward wherever relevant — e.g. a Project note shou
 `owner` and `team` as wikilinks, not plain text, so backlinks work. See
 `references/cli-usage.md` for the exact commands.
 
-### 3. Creating an AI artifact (Plan / Decision / Session)
+### 3. Creating an AI artifact (Plan / Decision)
 
 Determine the next ID (`references/naming-and-ids.md`), create the note from the matching
 template, then set `id`, `aliases`, `status`, and any known relationship fields. Cross-link
@@ -92,11 +109,52 @@ both directions where relevant:
 
 - A Decision that implements a Plan sets `implements: "[[PLAN-0004]]"`; go back and set the
   Plan's `resulted_in: "[[DEC-0007]]"` too.
-- A Session that touches other artifacts lists them in `related`.
 
 See `references/cli-usage.md` for a full worked example.
 
-### 4. Superseding, not deleting
+**Session notes (`SESS-`) are not part of this workflow — see "Session notes are automatic"
+below.**
+
+### 4. Session notes are automatic — don't create them yourself
+
+Every session, the `SessionEnd` hook writes exactly one factual `SESS-NNNN` note (repo, branch,
+commits, files changed, duration, `session_id`) regardless of what happened during the session.
+Because of this, **you should never create a Session note yourself** — doing so produces a
+second note for the same session instead of one.
+
+If something from the session is worth adding beyond that automatic metadata (a summary, a
+noteworthy tangent), don't create a new Session note — find the one this session already wrote
+(or will write) and update it instead:
+
+- During the session, there usually isn't one yet — the hook only runs at `SessionEnd`. In that
+  case, capture the substance as a Decision or Plan note instead (that's what those types are
+  for), and let the automatic Session note stand as the factual record.
+- If you're revisiting a past session and want to enrich its note, find it by listing
+  `AI/Sessions/` (titles are `SESS-NNNN <repo> <date>`) or by searching for the `session_id`
+  recorded in its body, then `append` to it — see "Updating an existing note" below.
+
+### 5. Updating an existing note
+
+Once you've found a match (workflow 1) or want to enrich a note you didn't just create, this is
+the procedure — for any note type:
+
+1. **Read it** — `obsidian vault="$VAULT" read file="<name>"` — so you know what's already
+   there and don't restate it.
+2. **Add new information:**
+   - New frontmatter value or changed status → `property:set` (remember `type=list` for
+     list-valued properties like `aliases`/`related`/`members`).
+   - New body content → `append` (or `prepend` for something that belongs at the top). These
+     only add text; the CLI has no command to edit or replace existing body prose in place. If
+     existing text is wrong (not just incomplete), edit it in the Obsidian app directly —
+     `create ... overwrite` is not a substitute; despite the name it doesn't overwrite an
+     existing note (see `references/cli-usage.md`).
+3. **Bump `updated` to today** — see workflow 7 below. Do this for any substantive change from
+   step 2; skip it if all you did was read.
+
+See `references/cli-usage.md` for the exact commands and a worked "found a match → update"
+example.
+
+### 6. Superseding, not deleting
 
 When a Plan or Decision is replaced rather than simply updated, don't overwrite or delete the
 old note — it's part of the historical record. Instead:
@@ -108,12 +166,12 @@ Status vocabulary is shared across Plans and Decisions: `draft → active/propos
 final/completed`, with `superseded` or `abandoned` as terminal alternatives. Full definitions
 are in `references/schema.md`.
 
-### 5. Keep `updated` current
+### 7. Keep `updated` current
 
 Any time you substantively edit an existing note (not just adding a backlink elsewhere), set
 its `updated` property to today. `created` is set once and never changes.
 
-### 6. Linking conventions
+### 8. Linking conventions
 
 - Use wikilinks (`[[Name]]`) for anything that refers to a person, team, project, or another
   artifact — in frontmatter properties and in body text alike. This is what makes backlinks

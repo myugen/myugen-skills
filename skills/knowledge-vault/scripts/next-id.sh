@@ -2,6 +2,13 @@
 # Print the next sequential ID for a given AI-artifact prefix (PLAN, DEC, SESS), by scanning
 # the resolved vault's matching AI/ subfolder for the highest existing <PREFIX>-NNNN.
 #
+# This does NOT reserve the ID — it's a point-in-time read with no lock, so two callers running
+# close together can be handed the same next ID (documented in
+# skills/knowledge-vault/references/naming-and-ids.md). Callers are responsible for tolerating
+# that: `scripts/session-end.sh` handles it by reading back the path `obsidian create` actually
+# used (it auto-suffixes on a name collision rather than erroring) instead of assuming the ID
+# it was handed is unique.
+#
 # Usage:
 #   skills/knowledge-vault/scripts/next-id.sh SESS
 #   -> SESS-0008
