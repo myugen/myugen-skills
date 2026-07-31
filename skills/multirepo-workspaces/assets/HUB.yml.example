@@ -1,0 +1,27 @@
+version: 1
+
+sources:
+  primary:
+    root: ~/dev/source-catalog
+  shared:
+    root: ~/dev/shared-catalog
+
+repositories:
+  required:
+    - name: core-api
+      source: primary
+      role: core-api
+      criticality: critical
+    - name: partner-api
+      source: primary
+      role: integrations
+      criticality: high
+  optional:
+    - name: contracts
+      source: shared
+      role: interface-documentation
+      criticality: medium
+    - name: customer-web
+      source: primary
+      role: frontend
+      criticality: high
