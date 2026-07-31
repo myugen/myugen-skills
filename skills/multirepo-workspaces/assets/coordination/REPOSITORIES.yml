@@ -1,0 +1,12 @@
+version: 1
+hub: "<hub>"
+ticket: "<ticket>"
+
+repositories:
+  - name: "<repository>"
+    source_catalog: "<source-id-from-HUB.yml>"
+    source_repository: "<absolute-or-home-relative-source-path>"
+    worktree: "<absolute-or-home-relative-worktree-path>"
+    branch: "<branch>"
+    role: "<role-from-HUB.yml>"
+    criticality: "<criticality-from-HUB.yml>"

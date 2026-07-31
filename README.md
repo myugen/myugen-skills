@@ -18,6 +18,7 @@ Code users can install every skill in one step instead of symlinking each one by
 | Skill | What it does |
 |-------|--------------|
 | [`knowledge-vault`](./skills/knowledge-vault) | Manage an Obsidian vault (via the `obsidian` CLI) as shared long-term memory for agents and humans — plans, decisions, session notes, and foundational knowledge about people, teams, and projects. |
+| [`multirepo-workspaces`](./skills/multirepo-workspaces) | Create and safely manage ticket-scoped Git worktree workspaces across multiple repositories, using hub metadata and coordination artifacts without converting source clones into a monorepo. |
 
 _New skills get added here as the hub grows — see [Adding a skill](#adding-a-skill)._
 
