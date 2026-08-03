@@ -34,33 +34,28 @@ below in this file (computing the next ID, the alias trick) applies to `PLAN-` a
 
 ### Determining the next ID
 
-1. List the target folder (e.g. `AI/Decisions/`) — a plain directory listing is fine here;
-   it's a read with no conflict risk, so it doesn't need to go through the CLI.
+1. List the target folder through the CLI, e.g.
+   `obsidian vault="$VAULT" files folder="AI/Decisions"`.
 2. Find the highest existing `<PREFIX>-<NNNN>` in use.
 3. Increment by 1, zero-pad to 4 digits.
 4. Do this immediately before creating the note, so the ID reflects the current state of the
    folder — don't pre-compute IDs ahead of time and hold onto them, since another note could
    be created in between.
 
-### Making short links work
+### Linking AI artifacts
 
-Set the ID alone as an `aliases` entry in frontmatter:
+Use the actual filename as the link target. You can display the stable ID as its label:
 
-```yaml
-aliases:
-  - DEC-0007
+```markdown
+[[DEC-0007 Choose Ticketing Vendor|DEC-0007]]
 ```
 
-This lets other notes link to it with the short form `[[DEC-0007]]` even though the actual
-filename includes the full title. Obsidian resolves aliases to the real file automatically —
-but only if `aliases` is an actual YAML list. Setting it via the CLI needs `type=list` or it
-lands as a string and alias resolution silently fails:
+Do not use `[[DEC-0007]]` as a shortcut: the CLI does not resolve frontmatter aliases when
+targeting `file=`, and bare-ID links remain unresolved in backlinks. `path=` is safest when you
+have a path from `files` or `search`.
 
-```
-obsidian vault="$VAULT" property:set name="aliases" value="DEC-0007" type=list file="<name>"
-```
-
-See `references/cli-usage.md` for the full `property:set` reference.
+Aliases on existing notes can remain as human-facing metadata, but they are not a reliable
+linking or CLI-targeting mechanism. See `references/cli-usage.md` for targeting details.
 
 ### Example
 
@@ -68,5 +63,4 @@ Creating the 8th decision on record:
 
 1. List `AI/Decisions/` → highest existing is `DEC-0007` → next is `DEC-0008`.
 2. Create `AI/Decisions/DEC-0008 Adopt New CRM.md` from the `Decision` template.
-3. Set `id: DEC-0008` and `aliases: [DEC-0008]`.
-
+3. Set `id: DEC-0008`, then link it elsewhere as `[[DEC-0008 Adopt New CRM|DEC-0008]]`.

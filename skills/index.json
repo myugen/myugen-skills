@@ -2,7 +2,7 @@
   "skills": [
     {
       "name": "knowledge-vault",
-      "version": "sha256:c1417a41973a1083b8d2d8c40e88122d69c298b6ad233788e92813a34d580e03",
+      "version": "sha256:5811f3e418d644af31997da032aac52dc511132e646b9b5cd39380bdafcf2320",
       "files": [
         "SKILL.md",
         "assets/config.example.json",
@@ -17,8 +17,10 @@
         "references/naming-and-ids.md",
         "references/schema.md",
         "references/setup.md",
+        "scripts/append-file.sh",
         "scripts/next-id.sh",
-        "scripts/resolve-vault.sh"
+        "scripts/resolve-vault.sh",
+        "scripts/run-with-timeout.sh"
       ]
     },
     {

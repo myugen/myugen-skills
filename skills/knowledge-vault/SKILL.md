@@ -60,11 +60,13 @@ type. Read it before creating or editing a note if you're not already familiar w
   refer to it — e.g. `People/Jana Smith.md`. These are linked by name, so the filename *is*
   the link target.
 - **AI artifacts** (`Plans/`, `Decisions/`, `Sessions/`): ID-prefixed — `PLAN-`, `DEC-`,
-  `SESS-` — since these are numerous and referenced by ID more than by title. You assign
+  `SESS-` — since these are numerous and their IDs stay visible in their names. You assign
   `PLAN-`/`DEC-` IDs yourself when creating those notes; `SESS-` IDs are assigned by the
-  `SessionEnd` hook, since you never create Session notes directly (see below).
+  `SessionEnd` hook, since you never create Session notes directly (see below). Link an
+  artifact with its full filename target, optionally displaying just its ID: `[[DEC-0007 Choose
+  Ticketing Vendor|DEC-0007]]`.
 
-Full mechanics for assigning and linking IDs (numbering, zero-padding, aliases) are in
+Full mechanics for assigning and linking IDs (numbering and zero-padding) are in
 `references/naming-and-ids.md` — read it before creating any note in `AI/`.
 
 ## Core workflows
@@ -79,9 +81,10 @@ confirm one doesn't already exist:
    more than a couple of hits, `search:context` shows matching lines in context, which makes it
    easier to tell a real match from a coincidental word overlap.
 2. For Plans/Decisions, also try the topic in different phrasings ("Ticketing Vendor" vs
-   "Ticketing Platform vendor") — a differently-titled existing note about the same thing is a
-   duplicate you'd otherwise miss. If in doubt, list the folder (`AI/Plans/`, `AI/Decisions/`)
-   and skim titles rather than trusting a single query.
+    "Ticketing Platform vendor") — a differently-titled existing note about the same thing is a
+    duplicate you'd otherwise miss. If in doubt, list the folder with `obsidian vault="$VAULT"
+    files folder="AI/Plans"` (or `AI/Decisions`) and skim titles rather than trusting a single
+    query.
 3. Treat any note that's clearly about the same real-world entity or the same decision/plan
    topic as a match, even if the title isn't identical — don't require an exact string match to
    count something as "already exists."
@@ -104,11 +107,12 @@ known properties and link outward wherever relevant — e.g. a Project note shou
 ### 3. Creating an AI artifact (Plan / Decision)
 
 Determine the next ID (`references/naming-and-ids.md`), create the note from the matching
-template, then set `id`, `aliases`, `status`, and any known relationship fields. Cross-link
-both directions where relevant:
+template, then set `id`, `status`, and any known relationship fields. Cross-link both directions
+with full artifact filename targets where relevant:
 
-- A Decision that implements a Plan sets `implements: "[[PLAN-0004]]"`; go back and set the
-  Plan's `resulted_in: "[[DEC-0007]]"` too.
+- A Decision that implements a Plan sets `implements: "[[PLAN-0004 Ticketing Vendor
+  Evaluation]]"`; go back and set the Plan's `resulted_in: "[[DEC-0007 Choose Ticketing
+  Vendor]]"` too.
 
 See `references/cli-usage.md` for a full worked example.
 
@@ -138,16 +142,19 @@ noteworthy tangent), don't create a new Session note — find the one this sessi
 Once you've found a match (workflow 1) or want to enrich a note you didn't just create, this is
 the procedure — for any note type:
 
-1. **Read it** — `obsidian vault="$VAULT" read file="<name>"` — so you know what's already
-   there and don't restate it.
+1. **Read it** — `obsidian vault="$VAULT" read path="<path>"` — so you know what's already
+    there and don't restate it. Use a path returned by `search` or `files`; `file=` accepts a
+    real filename, not an ID or frontmatter alias.
 2. **Add new information:**
-   - New frontmatter value or changed status → `property:set` (remember `type=list` for
-     list-valued properties like `aliases`/`related`/`members`).
-   - New body content → `append` (or `prepend` for something that belongs at the top). These
-     only add text; the CLI has no command to edit or replace existing body prose in place. If
-     existing text is wrong (not just incomplete), edit it in the Obsidian app directly —
-     `create ... overwrite` is not a substitute; despite the name it doesn't overwrite an
-     existing note (see `references/cli-usage.md`).
+    - New frontmatter value or changed status → `property:set`. Use `type=list` for a
+      list-valued property, but it accepts only one value and a later call replaces it; see
+      `references/cli-usage.md` before setting a multi-value field.
+    - New body content → `append` (or `prepend` for something that belongs at the top). Use
+      `scripts/append-file.sh` for multiline content. These only add text; the CLI has no
+      command to edit or replace existing body prose in place. If existing text is wrong (not
+      just incomplete), edit it in the Obsidian app directly — `create ... overwrite` is not a
+      substitute; despite the name it doesn't overwrite an existing note (see
+      `references/cli-usage.md`).
 3. **Bump `updated` to today** — see workflow 7 below. Do this for any substantive change from
    step 2; skip it if all you did was read.
 
@@ -159,8 +166,8 @@ example.
 When a Plan or Decision is replaced rather than simply updated, don't overwrite or delete the
 old note — it's part of the historical record. Instead:
 
-- Set the old note's `status: superseded` and `superseded_by: "[[DEC-0009]]"`.
-- Set the new note's `supersedes: "[[DEC-0007]]"`.
+- Set the old note's `status: superseded` and `superseded_by: "[[DEC-0009 New Decision]]"`.
+- Set the new note's `supersedes: "[[DEC-0007 Old Decision]]"`.
 
 Status vocabulary is shared across Plans and Decisions: `draft → active/proposed →
 final/completed`, with `superseded` or `abandoned` as terminal alternatives. Full definitions
@@ -173,9 +180,10 @@ its `updated` property to today. `created` is set once and never changes.
 
 ### 8. Linking conventions
 
-- Use wikilinks (`[[Name]]`) for anything that refers to a person, team, project, or another
-  artifact — in frontmatter properties and in body text alike. This is what makes backlinks
-  and the graph view useful.
+- Use wikilinks for anything that refers to a person, team, project, or another artifact — in
+  frontmatter properties and in body text alike. Entity names can use `[[Name]]`; AI artifacts
+  must use their full filename target, such as `[[DEC-0007 Choose Ticketing Vendor|DEC-0007]]`.
+  This is what makes backlinks and the graph view useful.
 - Use `tags` only for cross-cutting themes that don't warrant their own note (e.g. `q3-2026`,
   `vendor-eval`) — not for entities that already have or deserve a note.
 
@@ -198,3 +206,6 @@ its `updated` property to today. `created` is set once and never changes.
   `Templates/` folder.
 - `scripts/resolve-vault.sh` — prints the vault name to use for the current working
   directory, per the config file's rules.
+- `scripts/append-file.sh` — appends a content file to an exact note path without hand-escaping
+  multiline text.
+- `scripts/run-with-timeout.sh` — bounds an external CLI invocation on macOS and Linux.

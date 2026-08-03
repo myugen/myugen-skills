@@ -9,6 +9,3 @@ members: []
 ---
 
 # {{title}}
-
-## Notes
-

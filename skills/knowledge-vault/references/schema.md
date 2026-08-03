@@ -10,7 +10,14 @@ Full property table per note type. All properties live in YAML frontmatter. Prop
 | `type`    | yes      | One of: `person`, `team`, `project`, `foundation`, `plan`, `decision`, `session` |
 | `created` | yes      | ISO date, set once at creation, never changes                    |
 | `updated` | yes      | ISO date, bumped on every substantive edit                        |
-| `tags`    | no       | Cross-cutting themes only — not entity references (use wikilinks for those) |
+| `tags`    | no       | List of cross-cutting themes only — not entity references (use wikilinks for those) |
+
+### List-valued properties and the CLI
+
+`tags`, `members`, and `related` are YAML lists. `property:set type=list` creates one proper
+list entry, but only accepts one value; calling it again replaces the previous entry, and commas
+are not split. Keep the primary relationship in frontmatter and link additional relationships in
+the body. Edit in Obsidian when every value must be represented in one YAML list.
 
 ## Person (`People/`)
 
@@ -27,7 +34,7 @@ Full property table per note type. All properties live in YAML frontmatter. Prop
 |-----------|----------|--------------------------------------------------|
 | `mission` | yes      | One-line description of what the team owns       |
 | `lead`    | no       | Wikilink to `People/` note                        |
-| `members` | no       | List of wikilinks to `People/` notes              |
+| `members` | no       | Primary member as a list entry; link further members in the body |
 
 ## Project (`Projects/`)
 
@@ -51,26 +58,24 @@ Full property table per note type. All properties live in YAML frontmatter. Prop
 | Property         | Required | Notes                                                       |
 |------------------|----------|-----------------------------------------------------------------|
 | `id`             | yes      | `PLAN-NNNN`                                                     |
-| `aliases`        | yes      | `[PLAN-NNNN]` so short-form wikilinks resolve                   |
 | `status`         | yes      | See status vocabulary below                                     |
 | `project`        | no       | Wikilink to `Projects/` note                                    |
 | `author`         | no       | Agent name or human name                                        |
-| `supersedes`     | no       | Wikilink to the `PLAN-NNNN` this replaces                        |
-| `superseded_by`  | no       | Wikilink to the `PLAN-NNNN` that replaced this                   |
-| `resulted_in`    | no       | Wikilink to a `DEC-NNNN`, once a decision is made from this plan |
+| `supersedes`     | no       | Exact-filename wikilink to the Plan this replaces                |
+| `superseded_by`  | no       | Exact-filename wikilink to the Plan that replaced this           |
+| `resulted_in`    | no       | Primary exact-filename Decision wikilink; link further decisions in the body |
 
 ## Decision (`AI/Decisions/`)
 
 | Property                  | Required | Notes                                             |
 |---------------------------|----------|-------------------------------------------------------|
 | `id`                      | yes      | `DEC-NNNN`                                            |
-| `aliases`                 | yes      | `[DEC-NNNN]`                                          |
 | `status`                  | yes      | See status vocabulary below                           |
-| `implements`              | no       | Wikilink to the `PLAN-NNNN` this decides on            |
-| `decided_by`              | no       | Wikilink(s) to `People/` note(s)                       |
+| `implements`              | no       | Exact-filename wikilink to the Plan this decides on     |
+| `decided_by`              | no       | Primary wikilink to a `People/` note; list other decision-makers in the body |
 | `date_decided`            | no       | ISO date                                               |
-| `supersedes`              | no       | Wikilink to the `DEC-NNNN` this replaces               |
-| `superseded_by`           | no       | Wikilink to the `DEC-NNNN` that replaced this          |
+| `supersedes`              | no       | Exact-filename wikilink to the Decision this replaces  |
+| `superseded_by`           | no       | Exact-filename wikilink to the Decision that replaced this |
 
 ## Session (`AI/Sessions/`)
 
@@ -80,10 +85,9 @@ yourself.** Listed here for completeness (e.g. if you need to read or enrich one
 | Property   | Required | Notes                                                    |
 |------------|----------|--------------------------------------------------------------|
 | `id`       | yes      | `SESS-NNNN`                                                   |
-| `aliases`  | yes      | `[SESS-NNNN]`                                                 |
 | `date`     | yes      | ISO date                                                      |
 | `project`  | no       | Wikilink to `Projects/` note                                  |
-| `related`  | no       | List of wikilinks to any plans/decisions/foundation notes touched |
+| `related`  | no       | Primary related note as a list entry; link further notes in the body |
 
 ## Status vocabulary (Plans and Decisions)
 
@@ -101,8 +105,25 @@ Shared across both artifact types so filtering/querying stays consistent:
 
 - Anything that has, or deserves, its own note gets linked with `[[wikilinks]]` — in both
   frontmatter and body text.
+- For AI artifacts, the target must be the full filename. Use `[[DEC-0008 Choose Ticketing
+  Vendor|DEC-0008]]` when the body should display just its ID. Bare IDs do not resolve through
+  the CLI and do not appear in backlinks.
 - `tags` are for themes and cross-cutting labels only (`q3-2026`, `vendor-eval`), never for
   entities that already have a note.
 - Prefer linking over restating: if a Decision's rationale depends on facts already captured in
   a Foundation note, link to it rather than re-explaining it inline.
 
+## Recommended body structure
+
+Add headings only when they have content. Templates deliberately leave them out because the CLI
+can append but cannot fill or replace existing prose in place.
+
+| Note type | Recommended sections |
+|-----------|----------------------|
+| Person | `## Notes` or `## Context` |
+| Team | `## Notes` or `## Context` |
+| Project | `## Overview`, then `## Notes` or `## History` |
+| Foundation | `## Summary`, then `## Details` |
+| Plan | `## Goal`, `## Approach`, `## Open questions` |
+| Decision | `## Decision`, `## Rationale`, `## Consequences` |
+| Session | Factual metadata, then optional `## Summary` and `## Next steps` |

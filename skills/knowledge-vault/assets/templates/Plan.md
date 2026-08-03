@@ -4,7 +4,6 @@ created: "{{date}}"
 updated: "{{date}}"
 tags: []
 id: 
-aliases: []
 status: draft
 project: 
 author: 
@@ -14,10 +13,3 @@ resulted_in:
 ---
 
 # {{title}}
-
-## Goal
-
-## Approach
-
-## Open questions
-

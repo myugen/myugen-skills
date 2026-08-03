@@ -10,6 +10,3 @@ email:
 ---
 
 # {{title}}
-
-## Notes
-

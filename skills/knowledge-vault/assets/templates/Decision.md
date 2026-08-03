@@ -4,7 +4,6 @@ created: "{{date}}"
 updated: "{{date}}"
 tags: []
 id: 
-aliases: []
 status: draft
 implements: 
 decided_by: 
@@ -14,10 +13,3 @@ superseded_by:
 ---
 
 # {{title}}
-
-## Decision
-
-## Rationale
-
-## Consequences
-

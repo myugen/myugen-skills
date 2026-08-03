@@ -85,6 +85,9 @@ template="Decision"` (etc.) works:
    "Template folder location" to `Templates/`. This is what makes `{{date}}` and `{{title}}`
    in the template files resolve when a note is created.
 
+When upgrading this skill, copy the seven templates again and overwrite the existing files in
+`Templates/`. Repository changes do not update templates that were already installed in a vault.
+
 ## 6. Health-check
 
 Run this before the first write in a fresh environment:
@@ -92,6 +95,7 @@ Run this before the first write in a fresh environment:
 ```sh
 bash scripts/resolve-vault.sh  # prints the resolved vault name
 obsidian vault="$(bash scripts/resolve-vault.sh)" vault info=name  # confirms it's reachable
+obsidian vault="$(bash scripts/resolve-vault.sh)" vault info=path  # prints its filesystem path
 obsidian vault="$(bash scripts/resolve-vault.sh)" search query="test"
 ```
 

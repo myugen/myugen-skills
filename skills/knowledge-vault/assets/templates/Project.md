@@ -10,8 +10,3 @@ started:
 ---
 
 # {{title}}
-
-## Overview
-
-## Notes
-

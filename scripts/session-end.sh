@@ -163,10 +163,11 @@ ACTUAL_PATH="$(printf '%s\n' "$CREATE_OUT" | sed -n 's/^Created: //p' | head -n1
 [ -n "$ACTUAL_PATH" ] || ACTUAL_PATH="$NOTE_PATH"
 
 obsidian vault="$VAULT" property:set name="id" value="$NEXT_ID" path="$ACTUAL_PATH" >/dev/null 2>&1
-obsidian vault="$VAULT" property:set name="aliases" value="$NEXT_ID" type=list path="$ACTUAL_PATH" >/dev/null 2>&1
 obsidian vault="$VAULT" property:set name="date" value="$TODAY" type=date path="$ACTUAL_PATH" >/dev/null 2>&1
 
-BODY="- repo: $REPO_NAME
+BODY="## What happened
+
+- repo: $REPO_NAME
 - branch: $BRANCH
 - commits: $COMMIT_COUNT
 - files changed: $CHANGED_FILES

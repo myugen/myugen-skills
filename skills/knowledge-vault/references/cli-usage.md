@@ -21,7 +21,8 @@ obsidian create name="My Note" content="Hello world"
 obsidian create name="My Note" silent overwrite
 ```
 
-For multiline content, use `\n` for newline and `\t` for tab within a quoted value.
+For a short inline body, use `\n` for newline and `\t` for tab within a quoted value. For a
+multiline body, use `scripts/append-file.sh` instead of assembling an escaped shell argument.
 
 ## File targeting
 
@@ -29,10 +30,12 @@ Commands that act on a note accept `file=` or `path=`. Without either, the curre
 file in Obsidian is used — so always pass one explicitly in this vault, to avoid acting on
 whatever the user happens to have open.
 
-- `file=<name>` — resolves like a wikilink: name only, no folder or extension needed. Use this
-  when the name is unique in the vault.
+- `file=<name>` — resolves a real filename/basename: no folder or extension is needed. It does
+  **not** resolve a frontmatter alias or bare artifact ID, so `file="DEC-0008"` does not target
+  `DEC-0008 Choose Ticketing Vendor.md`.
 - `path=<path>` — exact path from the vault root, e.g. `AI/Decisions/DEC-0008 Choose Ticketing
-  Vendor.md`. Use this on creation, and anywhere folder placement matters.
+  Vendor.md`. Use this on creation, and whenever `search` or `files` has already returned a
+  path; it is the safest targeting form.
 
 ## Vault targeting
 
@@ -49,6 +52,13 @@ and pass it explicitly on every command:
 ```sh
 VAULT=$(bash scripts/resolve-vault.sh)   # or apply the rule below by hand
 obsidian vault="$VAULT" search query="test"
+```
+
+To obtain the filesystem path of the selected vault, ask that selected vault directly rather
+than parsing `vaults verbose`:
+
+```sh
+obsidian vault="$VAULT" vault info=path
 ```
 
 If that config file doesn't exist yet, stop and follow `references/setup.md` — don't guess a
@@ -79,6 +89,20 @@ described above.
   printing it.
 - `total` — on list-style commands, returns just a count.
 
+## Bounded CLI calls
+
+An external CLI call can occasionally take longer than an agent's available execution window.
+Use the bundled wrapper when a call needs a hard limit:
+
+```sh
+scripts/run-with-timeout.sh 30 obsidian vault="$VAULT" wordcount path="AI/Plans/example.md"
+```
+
+It works on macOS and Linux without requiring `timeout` or `gtimeout`, passes through normal
+stdout/stderr and exit codes, and returns `124` if the deadline expires. Isolated `wordcount`
+calls completed successfully during verification; this is general defensive guidance, not a
+claim that `wordcount` always hangs.
+
 ## Commands used in this vault
 
 ### Search (read, before every write)
@@ -103,10 +127,16 @@ Useful options and related commands:
 - `search:context query="<term>"` — same search, but returns matching lines with surrounding
   context instead of just filenames. Use this when a plain `search` returns several hits and
   you need to tell a real match from a coincidental word overlap, without opening every file.
-- `files folder="<path>"` — lists filenames in a folder without searching content; useful when
-  you know roughly where a note would live (e.g. `files folder="AI/Decisions"`) and just want to
-  skim titles for a near-duplicate, or `files folder="AI/Sessions"` to find a specific session
-  note by its `SESS-NNNN <repo> <date>` title.
+
+### List a folder
+
+```
+obsidian vault="$VAULT" files folder="AI/Decisions"
+```
+
+Lists filenames in a folder without searching content. Use it to skim artifact titles for a
+near-duplicate, determine the next ID, or find a Session note by its `SESS-NNNN <repo> <date>`
+title.
 
 **Worked example — match found, update instead of creating:**
 
@@ -118,11 +148,11 @@ obsidian vault="$VAULT" search:context query="Ticketing Vendor"
 # → confirms "Projects/Ticketing Platform.md" already has a "## Vendor decision" section —
 #   this is the same topic, not a coincidence. Update it rather than creating a new note.
 
-obsidian vault="$VAULT" read file="Ticketing Platform"
+obsidian vault="$VAULT" read path="Projects/Ticketing Platform.md"
 # → read the existing content before appending, so you don't restate what's already there
 
-obsidian vault="$VAULT" append file="Ticketing Platform" content="..."
-obsidian vault="$VAULT" property:set name="updated" value="2026-07-13" type=date file="Ticketing Platform"
+obsidian vault="$VAULT" append path="Projects/Ticketing Platform.md" content="..."
+obsidian vault="$VAULT" property:set name="updated" value="2026-07-13" type=date path="Projects/Ticketing Platform.md"
 ```
 
 ### Create a note from a template
@@ -165,21 +195,21 @@ right after creating the note:
 obsidian vault="$VAULT" property:set name="<property>" value="<value>" file="<name>"
 ```
 
-Repeat once per property. For AI artifacts, this always includes at minimum `id`, `aliases`,
-and `status` right after creation — see `references/naming-and-ids.md` for how to compute the
-ID.
+Repeat once per property. For AI artifacts, this always includes at minimum `id` and `status`
+right after creation — see `references/naming-and-ids.md` for how to compute the ID.
 
-**List-valued properties need `type=list`.** `aliases`, `related`, and `members` are lists in
-the schema (see `references/schema.md`), but a plain `property:set` writes the value as a
-literal string (e.g. `aliases: "[DEC-0008]"`), which silently breaks alias resolution and
-backlinks. Pass `type=list` and a bare value (no brackets):
+**List-valued properties need `type=list`.** A plain `property:set` writes a literal string
+instead of a YAML list. Pass `type=list` and a bare value (no brackets):
 
 ```
-obsidian vault="$VAULT" property:set name="aliases" value="DEC-0008" type=list file="<name>"
+obsidian vault="$VAULT" property:set name="members" value="[[Jana Smith]]" type=list path="Teams/Platform.md"
 ```
 
-Confirmed by testing: without `type=list` the property lands as a string; with it, it lands as
-a proper YAML list entry.
+Confirmed by testing: `type=list` creates a proper YAML list entry, but accepts only one value.
+Another `property:set` for the same property **replaces** the prior item; comma-separated values
+remain one quoted string. Do not use repeated calls or comma/bracket encoding for a multi-value
+field. Keep the primary relationship in frontmatter and place further linked relationships in
+the note body. If every value must be a YAML list entry, edit that property in Obsidian.
 
 Related commands for reading/removing a single property without reading the whole note:
 
@@ -202,6 +232,16 @@ place.** If existing content is wrong rather than just incomplete, edit it in th
 directly — `create ... overwrite` is *not* a substitute; see the `overwrite` gotcha above, it
 doesn't actually overwrite.
 
+For a substantial body, put the content in a file and let the helper handle escaping:
+
+```sh
+scripts/append-file.sh "$VAULT" "AI/Decisions/DEC-0008 Choose Ticketing Vendor.md" decision-body.md
+```
+
+The helper requires an exact vault-relative path, preserves embedded newlines, tabs, and
+backslashes, and bounds the underlying CLI call. It only appends; it cannot replace existing
+prose.
+
 ### Read a note
 
 ```
@@ -215,6 +255,10 @@ obsidian vault="$VAULT" backlinks file="<name>"
 ```
 
 Useful before superseding or renaming something, to see what currently points to it.
+`backlinks` includes resolved links in both body text and frontmatter. A bare-ID link such as
+`[[DEC-0008]]` is unresolved, however, and is therefore not a backlink. Link AI artifacts with
+their full filename target, optionally using an ID label: `[[DEC-0008 Choose Ticketing
+Vendor|DEC-0008]]`.
 
 ### Tag overview
 
@@ -256,11 +300,10 @@ obsidian vault="$VAULT" create name="DEC-0008 Choose Ticketing Vendor" \
   path="AI/Decisions/DEC-0008 Choose Ticketing Vendor.md" \
   template="Decision" silent
 
-obsidian vault="$VAULT" property:set name="id" value="DEC-0008" file="DEC-0008 Choose Ticketing Vendor"
-obsidian vault="$VAULT" property:set name="aliases" value="DEC-0008" type=list file="DEC-0008 Choose Ticketing Vendor"
-obsidian vault="$VAULT" property:set name="status" value="final" file="DEC-0008 Choose Ticketing Vendor"
-obsidian vault="$VAULT" property:set name="implements" value="[[PLAN-0004]]" file="DEC-0008 Choose Ticketing Vendor"
+obsidian vault="$VAULT" property:set name="id" value="DEC-0008" path="AI/Decisions/DEC-0008 Choose Ticketing Vendor.md"
+obsidian vault="$VAULT" property:set name="status" value="final" path="AI/Decisions/DEC-0008 Choose Ticketing Vendor.md"
+obsidian vault="$VAULT" property:set name="implements" value="[[PLAN-0004 Ticketing Vendor Evaluation]]" path="AI/Decisions/DEC-0008 Choose Ticketing Vendor.md"
 
 # and link back from the plan it implements
-obsidian vault="$VAULT" property:set name="resulted_in" value="[[DEC-0008]]" file="PLAN-0004 Ticketing Vendor Evaluation"
+obsidian vault="$VAULT" property:set name="resulted_in" value="[[DEC-0008 Choose Ticketing Vendor]]" path="AI/Plans/PLAN-0004 Ticketing Vendor Evaluation.md"
 ```

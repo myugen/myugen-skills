@@ -15,8 +15,8 @@
 #
 # Resolves the vault the same way resolve-vault.sh does ($OBSIDIAN_VAULT env var, or
 # ~/.config/knowledge-vault/config.json). Requires the `obsidian` CLI to be reachable
-# (Obsidian running) since it uses `obsidian vaults verbose` to find the vault's filesystem
-# path.
+# (Obsidian running) since it uses `obsidian vault info=path` to find the selected vault's
+# filesystem path.
 
 set -euo pipefail
 
@@ -40,10 +40,14 @@ esac
 
 VAULT="$("$SCRIPT_DIR/resolve-vault.sh")"
 
-VAULT_PATH="$(obsidian vaults verbose 2>/dev/null | awk -F'\t' -v v="$VAULT" '$1 == v { print $2 }')"
+if ! VAULT_PATH="$("$SCRIPT_DIR/run-with-timeout.sh" "${KV_TIMEOUT_SECONDS:-30}" \
+  obsidian "vault=$VAULT" vault info=path)"; then
+  echo "error: could not obtain the path for vault '$VAULT' with \`vault info=path\`" >&2
+  exit 1
+fi
 
 if [ -z "$VAULT_PATH" ]; then
-  echo "error: vault '$VAULT' not found in \`obsidian vaults verbose\` output" >&2
+  echo "error: vault '$VAULT' returned no path from \`vault info=path\`" >&2
   exit 1
 fi
 
