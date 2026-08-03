@@ -1,0 +1,43 @@
+{
+  "skills": [
+    {
+      "name": "knowledge-vault",
+      "version": "sha256:c1417a41973a1083b8d2d8c40e88122d69c298b6ad233788e92813a34d580e03",
+      "files": [
+        "SKILL.md",
+        "assets/config.example.json",
+        "assets/templates/Decision.md",
+        "assets/templates/Foundation.md",
+        "assets/templates/Person.md",
+        "assets/templates/Plan.md",
+        "assets/templates/Project.md",
+        "assets/templates/Session.md",
+        "assets/templates/Team.md",
+        "references/cli-usage.md",
+        "references/naming-and-ids.md",
+        "references/schema.md",
+        "references/setup.md",
+        "scripts/next-id.sh",
+        "scripts/resolve-vault.sh"
+      ]
+    },
+    {
+      "name": "multirepo-workspaces",
+      "version": "sha256:5062bccc77223d3bb06fe2cbc009654379d84109ed4fa9a628c9c5527c198597",
+      "files": [
+        "SKILL.md",
+        "agents/openai.yaml",
+        "assets/AGENTS.md",
+        "assets/CLAUDE.md",
+        "assets/HUB.yml.example",
+        "assets/coordination/AGENTS.md",
+        "assets/coordination/CLAUDE.md",
+        "assets/coordination/DECISIONS.md",
+        "assets/coordination/IMPACT.md",
+        "assets/coordination/PLAN.md",
+        "assets/coordination/REPOSITORIES.yml",
+        "references/hub-schema.md"
+      ]
+    }
+  ]
+}

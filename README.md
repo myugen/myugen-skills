@@ -60,6 +60,24 @@ depends on who's using them:
   done
   ```
 
+### OpenCode
+
+OpenCode can load the public, generated skill catalog directly from this repository:
+
+```jsonc
+{
+  "skills": {
+    "urls": [
+      "https://raw.githubusercontent.com/myugen/myugen-skills/main/skills/"
+    ]
+  }
+}
+```
+
+Add this to `~/.config/opencode/opencode.jsonc`, then restart OpenCode and verify discovery
+with `opencode debug skill`. `skills/index.json` is generated from the skill directories and
+updated automatically after changes under `skills/` merge into `main`.
+
 ## Automatic capture (Claude Code)
 
 Skills are model-invoked — Claude decides whether to use one, which means during heads-down

@@ -1,0 +1,60 @@
+name: Update skill index
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "skills/**"
+      - "!skills/index.json"
+      - "scripts/generate-skill-index.py"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-skill-index-main
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Generate and publish the skill index
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          for attempt in 1 2 3; do
+            git fetch origin main
+            git checkout --detach origin/main
+            python3 scripts/generate-skill-index.py
+
+            if git diff --quiet -- skills/index.json; then
+              echo "skills/index.json is already current"
+              exit 0
+            fi
+
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add skills/index.json
+            git commit -m "chore: update skill index"
+
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+
+            echo "main changed while publishing; retrying (${attempt}/3)"
+          done
+
+          echo "could not publish skills/index.json after three attempts" >&2
+          exit 1

@@ -90,9 +90,9 @@ template="Decision"` (etc.) works:
 Run this before the first write in a fresh environment:
 
 ```sh
-scripts/resolve-vault.sh                                   # prints the resolved vault name
-obsidian vault="$(scripts/resolve-vault.sh)" vault info=name  # confirms it's reachable
-obsidian vault="$(scripts/resolve-vault.sh)" search query="test"
+bash scripts/resolve-vault.sh  # prints the resolved vault name
+obsidian vault="$(bash scripts/resolve-vault.sh)" vault info=name  # confirms it's reachable
+obsidian vault="$(bash scripts/resolve-vault.sh)" search query="test"
 ```
 
 If `resolve-vault.sh` exits non-zero, re-check step 4 (the config file). If `vault info=name`

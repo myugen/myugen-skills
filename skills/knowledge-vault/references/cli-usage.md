@@ -47,7 +47,7 @@ Instead, resolve the vault from the user-level config at
 and pass it explicitly on every command:
 
 ```sh
-VAULT=$(scripts/resolve-vault.sh)   # or apply the rule below by hand
+VAULT=$(bash scripts/resolve-vault.sh)   # or apply the rule below by hand
 obsidian vault="$VAULT" search query="test"
 ```
 
@@ -66,7 +66,7 @@ vault name.
 
 The config file's full shape is documented in `references/setup.md`.
 
-Every example below assumes you've already run `VAULT=$(scripts/resolve-vault.sh)` and carries
+Every example below assumes you've already run `VAULT=$(bash scripts/resolve-vault.sh)` and carries
 `vault="$VAULT"` accordingly — that's not optional decoration, it's the fix for the default
 described above.
 
@@ -245,7 +245,7 @@ capture the substance as a Decision or Plan note instead.
 ## End-to-end example: logging a decision
 
 ```sh
-VAULT=$(scripts/resolve-vault.sh)
+VAULT=$(bash scripts/resolve-vault.sh)
 
 obsidian vault="$VAULT" search query="Ticketing Vendor"
 # → nothing found, safe to create
@@ -264,4 +264,3 @@ obsidian vault="$VAULT" property:set name="implements" value="[[PLAN-0004]]" fil
 # and link back from the plan it implements
 obsidian vault="$VAULT" property:set name="resulted_in" value="[[DEC-0008]]" file="PLAN-0004 Ticketing Vendor Evaluation"
 ```
-
