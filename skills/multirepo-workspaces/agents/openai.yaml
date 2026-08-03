@@ -1,4 +1,4 @@
 interface:
   display_name: "Multirepo Workspaces"
-  short_description: "Manage safe ticket worktrees across repositories"
-  default_prompt: "Use $multirepo-workspaces to create or manage a safe ticket-scoped workspace across multiple Git repositories."
+  short_description: "Initialize project hubs and safe ticket worktrees"
+  default_prompt: "Use $multirepo-workspaces to initialize a project hub or create and manage a safe ticket-scoped workspace across multiple Git repositories."

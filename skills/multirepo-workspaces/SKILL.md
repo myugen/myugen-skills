@@ -19,6 +19,31 @@ reorganized into a monorepo.
 - Read [the hub schema](references/hub-schema.md) before creating or changing a hub, and when
   validating fields or resolving repository paths.
 
+## Create A Hub
+
+A hub is one project or functional vertical beneath `~/dev/workspaces/<hub>/`. It inventories
+source clones and their roles; it is never itself a Git repository and does not create a worktree.
+
+1. List existing hubs, then ask for the hub name, purpose, and system context when they were not
+   supplied. Ask for source catalog roots and every repository that belongs to the project.
+2. For each repository, collect its source catalog, required/optional classification, role, and
+   criticality. Required means normal context, not automatic ticket scope.
+3. Validate every source catalog and source clone without changing it. Read its Git status and
+   confirm the resolved path is the expected repository.
+4. Gather the branch convention and any durable context that belongs in `SYSTEM_MAP.md`. Do not
+   invent organizational details that the user did not provide.
+5. Before the first write, validate the hub name, destination containment, repository uniqueness,
+   and any pre-existing hub state. Show the full file layout and repository inventory, then get
+   explicit confirmation.
+6. Create `HUB.yml` from `assets/HUB.yml.example` and `SYSTEM_MAP.md`, `AGENTS.md`, and
+   `CLAUDE.md` from `assets/hub/`, using actual values only. Do not leave scaffold placeholders
+   in live files, and never run `git init`.
+7. On a compatible rerun, inspect and report the existing hub as a no-op. Resume a partial hub
+   only after confirming its existing files and planned additions; stop on incompatible content
+   rather than overwriting or repairing it silently.
+
+See [the hub schema](references/hub-schema.md) for names, layout, containment, and rerun rules.
+
 ## Create A Ticket Workspace
 
 1. Identify the hub and ticket. Resolve the hub as `~/dev/workspaces/<hub>/`; do not treat a
@@ -43,11 +68,16 @@ reorganized into a monorepo.
 5. Determine the branch and local start point for each selected repository. Use only refs
    already present locally unless the user explicitly asks for a remote operation. Check
    whether each branch is already attached to another worktree.
-6. Show the proposed repository, source path, worktree path, branch, role, and start point to
-   the user before proceeding whenever selection or branch behavior is ambiguous.
-7. Create `~/dev/workspaces/<hub>/<ticket>/`. Never run `git init` in the workspace root, hub,
-   or ticket directory.
-8. Add one worktree per selected repository. Use the source clone only as Git's worktree
+6. Validate every selected source clone, local start point, destination, and branch attachment
+   before the first write. Show the proposed repository, source path, worktree path, branch,
+   role, and start point, then get explicit confirmation.
+7. Inspect any existing ticket directory. An exact compatible rerun is a no-op; a partial ticket
+   may be resumed after showing its actual worktrees and coordination files; incompatible content
+   stops the operation. Never run `git init` in the workspace root, hub, or ticket directory.
+8. Initialize the ticket's root `AGENTS.md`, `CLAUDE.md`, and `.coordination/` files before
+   creating worktrees. Set `REPOSITORIES.yml` to the actual hub and ticket with an empty
+   `repositories` list, not placeholders.
+9. Add one worktree per selected repository. Use the source clone only as Git's worktree
    manager; do not change its checkout or files:
 
    ```sh
@@ -61,13 +91,11 @@ reorganized into a monorepo.
    Resolve `<worktree-path>` fully under the ticket workspace because `git -C` changes the
    command's working directory to the source repository.
 
-9. Copy `assets/coordination/` to `<ticket>/.coordination/`, then copy `assets/AGENTS.md` and
-   `assets/CLAUDE.md` to the ticket root. Fill every placeholder and record the actual scope in
-   `.coordination/REPOSITORIES.yml`, including source and worktree paths, branch, role, and
-   criticality. Initialize `PLAN.md`, `IMPACT.md`, and `DECISIONS.md` from known ticket context
-   rather than inventing details.
-10. Re-run `git worktree list --porcelain` for each source and report the resulting ticket
-    workspace, repositories, and branches.
+10. After each successful worktree, immediately record its actual path, source, branch, role, and
+    criticality in `.coordination/REPOSITORIES.yml`. Initialize `PLAN.md`, `IMPACT.md`, and
+    `DECISIONS.md` from known ticket context rather than inventing details.
+11. Re-run `git worktree list --porcelain` for each source and report the resulting ticket
+    workspace, repositories, branches, and any safely resumable partial state.
 
 If a requested branch is attached to another worktree, do not force or detach it. Report its
 current worktree and offer safe choices: use that workspace, choose a different branch name,
@@ -120,12 +148,16 @@ Closing is a destructive workflow and always requires an explicit user request.
 - Never force a branch already used by another worktree.
 - Never touch repositories outside the ticket's declared effective scope.
 - Show the repositories and branches before any ambiguous operation.
+- Never overwrite a hub, ticket, coordination file, or adapter file. Report incompatible or
+  partial state and require confirmation before resuming.
+- Never create a symlink, copy, or nested Git repository as a substitute for a full linked
+  worktree. Do not alter sparse-checkout settings unless the user explicitly asks for that.
 
 ## Resources
 
 - `references/hub-schema.md` documents `HUB.yml`, path resolution, validation rules, and the
   distinction between hub context and effective ticket scope.
-- `assets/HUB.yml.example` is a provider-neutral starter hub declaration.
+- `assets/HUB.yml.example` and `assets/hub/` are provider-neutral hub scaffolding.
 - `assets/AGENTS.md` and `assets/CLAUDE.md` are ticket-root adapters that load or point agents
   to the coordination scope and plan while preserving the multi-repository boundary.
 - `assets/coordination/` contains the files to copy into each ticket's `.coordination/`

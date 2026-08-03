@@ -5,6 +5,35 @@ catalog names to directories of independent Git clones, then classifies reposito
 commonly the hub needs them. It is not a monorepo manifest and does not grant permission to
 change source clones.
 
+## Hub Layout
+
+A complete hub lives at `~/dev/workspaces/<hub>/` and contains:
+
+```text
+<hub>/
+├── HUB.yml         repository inventory and source catalogs
+├── SYSTEM_MAP.md   project context, topology, and conventions
+├── AGENTS.md       portable instructions for hub and ticket work
+├── CLAUDE.md       Claude Code adapter for the hub instructions
+└── <ticket>/       one coordination root per ticket, never a Git repository
+```
+
+The hub and ticket roots are coordination directories, not repositories. Only their selected
+repository children are linked Git worktrees.
+
+## Names and destination safety
+
+- Hub names, ticket names, source identifiers, and repository names must be non-empty, unique in
+  their relevant map/list, and contain only letters, digits, `.`, `_`, and `-`.
+- Reject names containing separators, `.` or `..` as complete names, or absolute paths.
+- Resolve and normalize every destination before writing. A hub must remain under the selected
+  workspace root; a ticket must remain directly under its hub; a worktree must remain directly
+  under its ticket.
+- Do not follow a symlink that would escape one of those roots. A destination that already exists
+  as a file, symlink, or unrelated directory is a conflict, not permission to overwrite it.
+- A source root and source repository may be symlinks only when their resolved paths still match
+  the user-confirmed source catalog and Git repository. Never create symlinks as workspaces.
+
 ## Complete Example
 
 ```yaml
@@ -79,6 +108,26 @@ Before creating a worktree, verify:
 
 Do not fetch to satisfy validation. A missing branch or start point is a decision to surface,
 not permission to change local or remote state.
+
+## Initialization and reruns
+
+Before initializing a hub, collect and validate its purpose, source roots, repository inventory,
+repository classifications, roles, criticality, and any known system conventions. Show the final
+file layout and repository inventory before creating any file. Generated live files must contain
+actual values, not template placeholders.
+
+A rerun is compatible only when existing hub or ticket metadata agrees with the requested name,
+paths, repository source, role, criticality, branch, and start point. In that case, report it as
+a no-op or offer to add only missing scaffold files after confirmation.
+
+When a ticket was partially created, inspect its coordination metadata and `git worktree list
+--porcelain` for every selected source. Reuse a worktree only when its path, source, branch, and
+HEAD match the requested state. Record every newly successful worktree immediately. On any
+failure, report the actual created state and stop; never roll it back automatically.
+
+Any mismatch, placeholder-filled live file, occupied destination, branch attached elsewhere, or
+worktree registered with different metadata is incompatible. Stop and ask the user how to proceed;
+never overwrite, detach, force, or silently repair it.
 
 ## Required Versus Effective Scope
 

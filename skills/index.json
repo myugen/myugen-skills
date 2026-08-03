@@ -33,7 +33,7 @@
     },
     {
       "name": "multirepo-workspaces",
-      "version": "sha256:5062bccc77223d3bb06fe2cbc009654379d84109ed4fa9a628c9c5527c198597",
+      "version": "sha256:435889b6bf46072061f8fd102ac1907a5a42fef9065d79a80b8b7dc258e198e4",
       "files": [
         "SKILL.md",
         "agents/openai.yaml",
@@ -46,6 +46,9 @@
         "assets/coordination/IMPACT.md",
         "assets/coordination/PLAN.md",
         "assets/coordination/REPOSITORIES.yml",
+        "assets/hub/AGENTS.md",
+        "assets/hub/CLAUDE.md",
+        "assets/hub/SYSTEM_MAP.md",
         "references/hub-schema.md"
       ]
     }

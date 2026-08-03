@@ -4,8 +4,8 @@ This directory coordinates one ticket across independent Git worktrees.
 
 Before changing code:
 
-1. Read `.coordination/PLAN.md`, `.coordination/REPOSITORIES.yml`, and the hub-level
-   `HUB.yml`, `SYSTEM_MAP.md`, and `AGENTS.md` when present.
+1. Read `.coordination/PLAN.md`, `.coordination/REPOSITORIES.yml`, then the parent hub's
+   `HUB.yml`, `SYSTEM_MAP.md`, and `AGENTS.md`.
 2. Confirm that the repository you intend to change is listed in `REPOSITORIES.yml`.
 3. Read and follow the local instructions inside each included repository.
 

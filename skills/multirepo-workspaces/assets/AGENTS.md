@@ -1,7 +1,7 @@
 # Ticket Workspace
 
 Before working, read and follow `.coordination/AGENTS.md`, then read
-`.coordination/REPOSITORIES.yml` and `.coordination/PLAN.md`.
+`.coordination/REPOSITORIES.yml`, `.coordination/PLAN.md`, and the parent hub's `AGENTS.md`.
 
 Treat this ticket directory as a coordination root, not as a Git repository. Each listed child
 directory is an independent Git worktree with its own branch, history, tests, and repository
