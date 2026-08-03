@@ -2,6 +2,13 @@
 
 All notable changes to this project are documented in this file.
 
+## [1.4.0] - 2026-08-03
+
+### Added
+
+- Added the `conventional-commits` skill for focused, safely staged Git commits that follow
+  Conventional Commits 1.0.0.
+
 ## [1.3.1] - 2026-08-03
 
 ### Added
