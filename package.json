@@ -1,0 +1,38 @@
+{
+  "name": "myugen-skills",
+  "version": "1.5.0",
+  "description": "OpenCode plugin for Myugen's organizational skills and workspace commands.",
+  "type": "module",
+  "main": "./opencode/plugin.js",
+  "exports": {
+    ".": "./opencode/plugin.js",
+    "./opencode": "./opencode/plugin.js"
+  },
+  "files": [
+    "opencode/plugin.js",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "test": "node --test",
+    "prepublishOnly": "npm test"
+  },
+  "engines": {
+    "node": ">=22.14.0"
+  },
+  "keywords": [
+    "opencode",
+    "agent-skills",
+    "git-worktrees",
+    "workspace"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/myugen/myugen-skills.git"
+  },
+  "homepage": "https://github.com/myugen/myugen-skills",
+  "license": "UNLICENSED",
+  "publishConfig": {
+    "access": "public"
+  }
+}

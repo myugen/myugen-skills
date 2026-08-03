@@ -19,7 +19,7 @@ Code users can install every skill in one step instead of symlinking each one by
 |-------|--------------|
 | [`conventional-commits`](./skills/conventional-commits) | Create focused, safe Git commits using the Conventional Commits 1.0.0 format, including change review, explicit staging, message composition, and post-commit verification. |
 | [`knowledge-vault`](./skills/knowledge-vault) | Manage an Obsidian vault (via the `obsidian` CLI) as shared long-term memory for agents and humans — plans, decisions, session notes, and foundational knowledge about people, teams, and projects. |
-| [`multirepo-workspaces`](./skills/multirepo-workspaces) | Create and safely manage ticket-scoped Git worktree workspaces across multiple repositories, using hub metadata and coordination artifacts without converting source clones into a monorepo. |
+| [`multirepo-workspaces`](./skills/multirepo-workspaces) | Initialize project hubs and safely manage ticket-scoped Git worktree workspaces across multiple repositories, using hub metadata and coordination artifacts without converting source clones into a monorepo. |
 
 _New skills get added here as the hub grows — see [Adding a skill](#adding-a-skill)._
 
@@ -63,7 +63,22 @@ depends on who's using them:
 
 ### OpenCode
 
-OpenCode can load the public, generated skill catalog directly from this repository:
+Install the complete OpenCode integration with the npm plugin:
+
+```jsonc
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugin": ["myugen-skills"]
+}
+```
+
+The plugin adds this repository's public skill catalog and the `/workspace-init` and
+`/workspace-new` commands without replacing an existing command or skill URL. Restart OpenCode
+after adding the plugin; the commands then appear in its slash-command menu. `opencode debug
+config` confirms that the plugin is registered.
+
+For skills without the command adapters, OpenCode can instead load the public generated catalog
+directly from this repository:
 
 ```jsonc
 {
@@ -78,6 +93,28 @@ OpenCode can load the public, generated skill catalog directly from this reposit
 Add this to `~/.config/opencode/opencode.jsonc`, then restart OpenCode and verify discovery
 with `opencode debug skill`. `skills/index.json` is generated from the skill directories and
 updated automatically after changes under `skills/` merge into `main`.
+
+#### Publishing the OpenCode plugin
+
+The first public npm release must be published manually, then npm trusted publishing can take
+over. From the matching release commit, run `npm login`, `npm test`, `npm pack --dry-run`, and
+`npm publish`. Then configure npm's trusted publisher as `myugen/myugen-skills` with
+`.github/workflows/publish-npm.yml` and allow `npm publish`. Later non-prerelease GitHub Releases
+publish through OIDC with provenance; no npm token is stored in GitHub.
+
+### Workspace commands (Claude Code)
+
+The installed Claude plugin exposes two manual commands over the portable
+[`multirepo-workspaces`](./skills/multirepo-workspaces) skill:
+
+- `/myugen-skills:workspace-init [hub-name]` — asks for a project/hub, its source repositories,
+  roles, and context; then creates the hub under `~/dev/workspaces/` after confirmation.
+- `/myugen-skills:workspace-new [hub-name] [ticket]` — asks which registered repositories are
+  involved in a task, validates branches and local start points, then creates the selected linked
+  worktrees and coordination files after confirmation.
+
+Arguments are optional answers, not permission to skip validation. The commands are
+Claude-specific adapters; other agents use the same portable skill workflow directly.
 
 ## Automatic capture (Claude Code)
 

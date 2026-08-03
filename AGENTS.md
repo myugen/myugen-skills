@@ -12,6 +12,8 @@ The repo root also doubles as a **Claude Code plugin**:
 .claude-plugin/
   plugin.json         plugin manifest (name, description, version, author)
   marketplace.json     lets `/plugin marketplace add` resolve this repo
+commands/              Claude-only interactive adapters for plugin workflows
+opencode/plugin.js     npm-distributed OpenCode adapter for skills and commands
 skills/                auto-discovered by the plugin — one folder per skill
 hooks/                 Claude-only layer: deterministic session capture (see hooks/README.md)
 templates/              scaffolding for authoring new skills, not itself a skill
@@ -27,6 +29,14 @@ exist because skills are model-invoked (Claude decides whether to use one) and h
 skill's own scripts (`skills/knowledge-vault/scripts/resolve-vault.sh`, `next-id.sh`) rather
 than duplicating vault logic, and the skill itself must keep working standalone for non-Claude
 agents with no hooks layer at all.
+
+**`commands/` is also Claude-specific.** Commands are thin interactive adapters over the portable
+skills: they may collect user input and select a workflow, but must not duplicate the skill's
+schema, safety rules, or operational logic.
+
+**`opencode/plugin.js` is an OpenCode-specific adapter.** It registers commands and the remote
+skill catalog through OpenCode's config hook. Keep it dependency-free, preserve user configuration,
+and keep `package.json`'s version synchronized with both Claude plugin manifests.
 
 ## What a skill looks like
 

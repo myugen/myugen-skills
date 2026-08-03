@@ -1,5 +1,6 @@
 {
   "name": "myugen-skills",
+  "description": "Personal skills for organizational knowledge, safe Git commits, and multirepository workspaces.",
   "owner": {
     "name": "Miguel Ignacio Cabrera San Gil",
     "email": "miguelcabsan@gmail.com"
@@ -8,8 +9,8 @@
     {
       "name": "myugen-skills",
       "source": ".",
-      "description": "Personal skills for working with and inside organizations — knowledge capture, planning, and decision tracking.",
-      "version": "1.4.0"
+      "description": "Personal skills for organizational knowledge, safe Git commits, and multirepository workspaces.",
+      "version": "1.5.0"
     }
   ]
 }

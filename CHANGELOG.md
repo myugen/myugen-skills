@@ -2,6 +2,19 @@
 
 All notable changes to this project are documented in this file.
 
+## [1.5.0] - 2026-08-03
+
+### Added
+
+- Added `workspace-init` and `workspace-new` Claude commands for interactive hub and ticket
+  workspace creation.
+- Added complete hub scaffolding for system context and hub-level instructions.
+- Added an npm-distributed OpenCode plugin that installs the skill catalog and workspace commands.
+
+### Changed
+
+- Made multirepo hub and ticket creation explicitly validated, resumable, and safe to rerun.
+
 ## [1.4.0] - 2026-08-03
 
 ### Added
