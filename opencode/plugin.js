@@ -19,8 +19,22 @@ authoritative portable procedure. Treat $ARGUMENTS as optional hub-name and tick
 which registered repositories are involved. Validate local refs, branches, source clones, and
 destinations; show the complete plan and obtain explicit confirmation before creating coordination
 files or worktrees. Record only successfully created worktrees and report resumable partial state.
-Never fetch, pull, push, reset, clean, force, overwrite existing workspace content, or mutate
-source checkouts.`,
+    Never fetch, pull, push, reset, clean, force, overwrite existing workspace content, or mutate
+    source checkouts.`,
+  }),
+  "workspace-archive": Object.freeze({
+    description: "Interactively archive a ticket workspace while preserving branches and metadata",
+    agent: "build",
+    template: `Follow the multirepo-workspaces skill's Archive A Workspace workflow as the
+authoritative portable procedure. Treat $ARGUMENTS as optional hub-name and ticket answers; ask
+for missing or ambiguous values. Before the first write, validate every declared worktree against
+its source repository, inspect status and detectable unpushed commits from existing local refs,
+and reject dirty worktrees, drift, unexpected ticket-root content, or archive collisions. Show all
+worktrees to remove, retained branches, and the archive destination, then obtain explicit
+confirmation. Remove clean linked worktrees without force, preserve their branches, and move the
+verified ticket coordination root to <hub>/.archive/<ticket> only after every removal succeeds.
+Never fetch, pull, push, reset, clean, force, overwrite, delete branches, or mutate source
+checkouts.`,
   }),
 })
 

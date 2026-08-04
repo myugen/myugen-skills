@@ -15,6 +15,7 @@ A complete hub lives at `~/dev/workspaces/<hub>/` and contains:
 ├── SYSTEM_MAP.md   project context, topology, and conventions
 ├── AGENTS.md       portable instructions for hub and ticket work
 ├── CLAUDE.md       Claude Code adapter for the hub instructions
+├── .archive/       archived ticket coordination roots, created only when needed
 └── <ticket>/       one coordination root per ticket, never a Git repository
 ```
 
@@ -27,12 +28,15 @@ repository children are linked Git worktrees.
   their relevant map/list, and contain only letters, digits, `.`, `_`, and `-`.
 - Reject names containing separators, `.` or `..` as complete names, or absolute paths.
 - Resolve and normalize every destination before writing. A hub must remain under the selected
-  workspace root; a ticket must remain directly under its hub; a worktree must remain directly
-  under its ticket.
+  workspace root; an active ticket must remain directly under its hub; an archived ticket must
+  remain directly under `<hub>/.archive/`; and a worktree must remain directly under its active
+  ticket.
 - Do not follow a symlink that would escape one of those roots. A destination that already exists
   as a file, symlink, or unrelated directory is a conflict, not permission to overwrite it.
 - A source root and source repository may be symlinks only when their resolved paths still match
   the user-confirmed source catalog and Git repository. Never create symlinks as workspaces.
+- `.archive/` is reserved for archived ticket coordination roots. Do not create it until the first
+  successful archive, and do not create or overwrite an archive whose ticket name already exists.
 
 ## Complete Example
 
@@ -159,3 +163,15 @@ repositories:
 Use actual values, not placeholders, in a live ticket workspace. Update the file whenever a
 repository, branch, role, or path changes, and record the reason in `DECISIONS.md` when the
 scope change is significant.
+
+## Archived Tickets
+
+Archiving moves a completed or paused ticket coordination root from `<hub>/<ticket>/` to
+`<hub>/.archive/<ticket>/` only after every declared linked worktree has been safely removed.
+The archive retains `REPOSITORIES.yml` as the historical effective-scope record, even though its
+recorded worktree paths no longer exist.
+
+Before moving the ticket, create `.coordination/ARCHIVED.md` with the archive time, original
+ticket path, each removed worktree path, and the branch retained for each repository. Do not use
+an archive record to imply that a branch was merged, pushed, or deleted. An existing archive with
+overwriting history.

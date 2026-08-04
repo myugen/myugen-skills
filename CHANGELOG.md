@@ -2,6 +2,15 @@
 
 All notable changes to this project are documented in this file.
 
+## [1.6.0] - 2026-08-04
+
+### Added
+
+- Added a safe workspace archive workflow that removes clean ticket worktrees, preserves branches,
+  and retains coordination history under each hub's `.archive/` directory.
+- Added `/workspace-archive` to the OpenCode plugin and grouped Claude workspace commands under
+  `/myugen-skills:workspace:<action>`.
+
 ## [1.5.0] - 2026-08-03
 
 ### Added

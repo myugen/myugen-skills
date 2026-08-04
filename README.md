@@ -72,10 +72,10 @@ Install the complete OpenCode integration with the npm plugin:
 }
 ```
 
-The plugin adds this repository's public skill catalog and the `/workspace-init` and
-`/workspace-new` commands without replacing an existing command or skill URL. Restart OpenCode
-after adding the plugin; the commands then appear in its slash-command menu. `opencode debug
-config` confirms that the plugin is registered.
+The plugin adds this repository's public skill catalog and the `/workspace-init`, `/workspace-new`,
+and `/workspace-archive` commands without replacing an existing command or skill URL. Restart
+OpenCode after adding the plugin; the commands then appear in its slash-command menu. `opencode
+debug config` confirms that the plugin is registered.
 
 For skills without the command adapters, OpenCode can instead load the public generated catalog
 directly from this repository:
@@ -104,14 +104,17 @@ publish through OIDC with provenance; no npm token is stored in GitHub.
 
 ### Workspace commands (Claude Code)
 
-The installed Claude plugin exposes two manual commands over the portable
+The installed Claude plugin exposes three manual commands over the portable
 [`multirepo-workspaces`](./skills/multirepo-workspaces) skill:
 
-- `/myugen-skills:workspace-init [hub-name]` — asks for a project/hub, its source repositories,
+- `/myugen-skills:workspace:init [hub-name]` — asks for a project/hub, its source repositories,
   roles, and context; then creates the hub under `~/dev/workspaces/` after confirmation.
-- `/myugen-skills:workspace-new [hub-name] [ticket]` — asks which registered repositories are
+- `/myugen-skills:workspace:new [hub-name] [ticket]` — asks which registered repositories are
   involved in a task, validates branches and local start points, then creates the selected linked
   worktrees and coordination files after confirmation.
+- `/myugen-skills:workspace:archive [hub-name] [ticket]` — validates that every ticket worktree
+  is clean, removes it without force while retaining its branch, then moves its coordination
+  history to `<hub>/.archive/<ticket>/` after confirmation.
 
 Arguments are optional answers, not permission to skip validation. The commands are
 Claude-specific adapters; other agents use the same portable skill workflow directly.

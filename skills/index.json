@@ -33,7 +33,7 @@
     },
     {
       "name": "multirepo-workspaces",
-      "version": "sha256:435889b6bf46072061f8fd102ac1907a5a42fef9065d79a80b8b7dc258e198e4",
+      "version": "sha256:a3beaa3085d168b654b3308c36dc9844ba815d48fedd4dd753841aa47aa74e91",
       "files": [
         "SKILL.md",
         "agents/openai.yaml",

@@ -1,6 +1,6 @@
 ---
 name: multirepo-workspaces
-description: Creates and safely manages local, ticket-scoped Git worktree workspaces spanning multiple repositories without making a monorepo or changing source clones. It should be used for requests such as "create a workspace for ticket X", "set up a multirepo environment", "prepare worktrees for this vertical", "add a repository to the ticket workspace", or "close a multirepo workspace", including equivalent requests such as "crea un workspace", "monta un entorno multirepo", and "limpia el workspace".
+description: Creates, archives, and safely manages local, ticket-scoped Git worktree workspaces spanning multiple repositories without making a monorepo or changing source clones. It should be used for requests such as "create a workspace for ticket X", "set up a multirepo environment", "prepare worktrees for this vertical", "add a repository to the ticket workspace", "archive a multirepo workspace", or "close a multirepo workspace", including equivalent requests such as "crea un workspace", "monta un entorno multirepo", and "limpia el workspace".
 ---
 
 # Multirepo Workspaces
@@ -115,26 +115,48 @@ or create a new branch from an agreed local ref.
   pull, or only coordination metadata. Preview affected repositories and perform only the
   explicitly requested operation.
 
-## Close A Workspace
+## Archive A Workspace
 
-Closing is a destructive workflow and always requires an explicit user request.
+Archiving closes an active ticket workspace while retaining its coordination history. It is a
+destructive workflow and always requires an explicit user request. It removes only clean linked
+worktrees, retains their branches, then moves the ticket's coordination root to
+`<hub>/.archive/<ticket>/`.
 
-1. Read `REPOSITORIES.yml`, inspect every worktree status, and compare it with the source
-   repository's worktree list.
-2. Report uncommitted changes, untracked files, unpushed status when it can be determined from
-   existing local refs, and the branches that would remain. Stop if preserving work is unclear.
-3. Show exactly which worktrees will be removed and ask for confirmation if the request did
-   not already identify them unambiguously.
-4. Remove clean worktrees through their source repositories without `--force`:
+1. Read the hub files and `<ticket>/.coordination/REPOSITORIES.yml`. Validate the active ticket
+   and destination containment, and confirm that `<hub>/.archive/<ticket>/` does not already
+   exist. An already compatible archive is a no-op; any source or destination collision stops the
+   operation.
+2. Before the first write, compare every registered repository with its source repository's
+   `git worktree list --porcelain` and inspect its worktree status. Report uncommitted changes,
+   untracked files, detectable unpushed commits from existing local refs, branch, source, and
+   worktree path. Stop if a worktree is dirty, metadata has drifted, an expected worktree is
+   missing, or preserving work is unclear.
+3. Inspect the ticket root. It may contain only the ticket adapters, `.coordination/`, and the
+   declared worktree directories. Stop on unexpected files or directories rather than deleting or
+   silently archiving them.
+4. Show every worktree to remove, every branch to retain, the archive destination, and the
+   archive record to create. Obtain explicit confirmation before removing anything.
+5. Remove each clean worktree through its source repository without `--force`:
 
    ```sh
    git -C <source-repository> worktree remove <worktree-path>
    ```
 
-5. Do not delete branches as part of worktree removal. Branch deletion is a separate action
-   that needs an explicit request and a fresh safety check. Remove leftover ticket and
-   coordination directories only when the user explicitly requested the whole workspace be
-   deleted and they are empty or verified safe.
+6. After each removal, verify that the worktree is absent from the source repository's worktree
+   list and that its branch remains. If a removal fails, stop immediately. Leave the ticket's
+   coordination root in place and report the actual, resumable partial state; do not archive it.
+7. After every removal succeeds, create `.coordination/ARCHIVED.md` with the archive time,
+   original ticket path, removed worktrees, and retained branches. Move the verified ticket root
+   to `<hub>/.archive/<ticket>/`. Do not alter `REPOSITORIES.yml`; it is the historical record of
+   the archived effective scope.
+
+## Delete A Workspace
+
+Deleting a ticket workspace is separate from archiving and requires an explicit request. Follow
+the archive safety checks first. Delete branches only with a separate explicit request and fresh
+safety check. Remove an active ticket directory only when all worktrees are removed and its
+remaining content is empty or independently verified safe; never treat archive metadata as
+permission to delete history.
 
 ## Safety Rules
 
@@ -145,6 +167,9 @@ Closing is a destructive workflow and always requires an explicit user request.
   command.
 - Never fetch, pull, push, or otherwise change remote state without an explicit request.
 - Never remove a worktree or branch without an explicit request.
+- Never archive a ticket until every declared worktree has been removed and verified absent.
+- Never delete a branch while archiving. Branch deletion is a separate operation requiring a
+  separate explicit request and fresh safety check.
 - Never force a branch already used by another worktree.
 - Never touch repositories outside the ticket's declared effective scope.
 - Show the repositories and branches before any ambiguous operation.
