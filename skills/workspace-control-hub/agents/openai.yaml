@@ -1,0 +1,4 @@
+interface:
+  display_name: "Workspace Control Hub"
+  short_description: "Coordinate epics and parallel ticket workspaces"
+  default_prompt: "Use $workspace-control-hub to create, inspect, or diagnose an external per-vertical control hub for epics and parallel workspaces."

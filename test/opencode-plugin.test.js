@@ -10,7 +10,7 @@ async function configure(config) {
   plugin.config(config)
 }
 
-test("registers workspace commands and the skills catalog", async () => {
+test("registers workspace and control commands with the skills catalog", async () => {
   const config = {}
 
   await configure(config)
@@ -19,6 +19,9 @@ test("registers workspace commands and the skills catalog", async () => {
   assert.deepEqual(config.command["workspace-init"], commands["workspace-init"])
   assert.deepEqual(config.command["workspace-new"], commands["workspace-new"])
   assert.deepEqual(config.command["workspace-archive"], commands["workspace-archive"])
+  assert.deepEqual(config.command["workspace-control-init"], commands["workspace-control-init"])
+  assert.deepEqual(config.command["workspace-control-status"], commands["workspace-control-status"])
+  assert.deepEqual(config.command["workspace-control-doctor"], commands["workspace-control-doctor"])
 })
 
 test("preserves existing configuration and is idempotent", async () => {
@@ -35,4 +38,5 @@ test("preserves existing configuration and is idempotent", async () => {
   assert.equal(config.command["workspace-archive"], customCommand)
   assert.deepEqual(config.command["workspace-init"], commands["workspace-init"])
   assert.deepEqual(config.command["workspace-new"], commands["workspace-new"])
+  assert.deepEqual(config.command["workspace-control-doctor"], commands["workspace-control-doctor"])
 })

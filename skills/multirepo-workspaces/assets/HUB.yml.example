@@ -1,5 +1,9 @@
 version: 1
 
+# Optional external controller. Create and maintain it with workspace-control-hub.
+control_hub:
+  root: ~/dev/control-hubs/example
+
 sources:
   primary:
     root: ~/dev/source-catalog

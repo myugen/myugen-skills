@@ -20,6 +20,7 @@ Code users can install every skill in one step instead of symlinking each one by
 | [`conventional-commits`](./skills/conventional-commits) | Create focused, safe Git commits using the Conventional Commits 1.0.0 format, including change review, explicit staging, message composition, and post-commit verification. |
 | [`knowledge-vault`](./skills/knowledge-vault) | Manage an Obsidian vault (via the `obsidian` CLI) as shared long-term memory for agents and humans — plans, decisions, session notes, and foundational knowledge about people, teams, and projects. |
 | [`multirepo-workspaces`](./skills/multirepo-workspaces) | Initialize project hubs and safely manage ticket-scoped Git worktree workspaces across multiple repositories, using hub metadata and coordination artifacts without converting source clones into a monorepo. |
+| [`workspace-control-hub`](./skills/workspace-control-hub) | Create and query an external, per-vertical control hub that connects epics, parallel ticket workspaces, dependencies, readiness, and delivery evidence without replacing their authoritative systems. |
 
 _New skills get added here as the hub grows — see [Adding a skill](#adding-a-skill)._
 
@@ -73,7 +74,8 @@ Install the complete OpenCode integration with the npm plugin:
 ```
 
 The plugin adds this repository's public skill catalog and the `/workspace-init`, `/workspace-new`,
-and `/workspace-archive` commands without replacing an existing command or skill URL. Restart
+`/workspace-archive`, `/workspace-control-init`, `/workspace-control-status`, and
+`/workspace-control-doctor` commands without replacing an existing command or skill URL. Restart
 OpenCode after adding the plugin; the commands then appear in its slash-command menu. `opencode
 debug config` confirms that the plugin is registered.
 
@@ -115,6 +117,12 @@ The installed Claude plugin exposes three manual commands over the portable
 - `/myugen-skills:workspace:archive [hub-name] [ticket]` — validates that every ticket worktree
   is clean, removes it without force while retaining its branch, then moves its coordination
   history to `<hub>/.archive/<ticket>/` after confirmation.
+- `/myugen-skills:control:init [workspace-hub] [control-hub]` — creates a validated external
+  per-vertical controller and records its reciprocal workspace-hub link after confirmation.
+- `/myugen-skills:control:status [control-hub] [epic]` — reports ready work, blockers, delivery
+  evidence, and freshness without changing local or external systems.
+- `/myugen-skills:control:doctor [workspace-hub] [control-hub]` — read-only structural diagnosis
+  for a structured controller or legacy Markdown epic boards; it never applies a migration.
 
 Arguments are optional answers, not permission to skip validation. The commands are
 Claude-specific adapters; other agents use the same portable skill workflow directly.

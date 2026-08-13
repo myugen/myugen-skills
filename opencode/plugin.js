@@ -35,6 +35,33 @@ confirmation. Remove clean linked worktrees without force, preserve their branch
 verified ticket coordination root to <hub>/.archive/<ticket> only after every removal succeeds.
 Never fetch, pull, push, reset, clean, force, overwrite, delete branches, or mutate source
 checkouts.`,
+    }),
+  "workspace-control-init": Object.freeze({
+    description: "Interactively create an external control hub for one workspace vertical",
+    agent: "build",
+    template: `Follow the workspace-control-hub skill's Create A Control Hub workflow as the
+authoritative portable procedure. Treat $ARGUMENTS as optional workspace-hub and control-hub
+answers; ask for missing or ambiguous values. Validate both reciprocal paths and inspect existing
+content, show the controller layout and path changes, then obtain explicit confirmation before
+writing. Never initialize or mutate Git in the controller, and never alter source checkouts.`,
+  }),
+  "workspace-control-status": Object.freeze({
+    description: "Report cross-workspace epic status, readiness, blockers, and stale evidence",
+    agent: "build",
+    template: `Follow the workspace-control-hub skill's Answer A Status Question workflow. Treat
+$ARGUMENTS as optional control-hub and epic answers. Read controller and ticket coordination data,
+and consult configured tracker or Git-hosting providers only in read-only mode when authorized.
+Report readiness, blockers, review bottlenecks, stale observations, and drift separately. Do not
+edit files, worktrees, trackers, remotes, or source checkouts while answering.`,
+  }),
+  "workspace-control-doctor": Object.freeze({
+    description: "Read-only diagnosis of a workspace control hub or legacy epic boards",
+    agent: "build",
+    template: `Follow the workspace-control-hub skill's Diagnose A Controller Or Legacy Hub
+workflow. Treat $ARGUMENTS as optional workspace-hub and control-hub answers. Run the doctor only
+in read-only mode: it may report structural drift and migration candidates, but must never create,
+edit, move, initialize, commit, fetch, or otherwise modify files, worktrees, repositories,
+trackers, or remotes.`,
   }),
 })
 

@@ -2,6 +2,21 @@
 
 All notable changes to this project are documented in this file.
 
+## [1.7.0] - 2026-08-12
+
+### Added
+
+- Added the `workspace-control-hub` skill for external per-vertical control hubs with structured
+  epic records, concise Markdown views, readiness assessments, and explicit evidence freshness.
+- Added read-only workspace-control doctor support for structured controllers and legacy Markdown
+  epic boards, including safe migration diagnostics without an apply mode.
+- Added Claude and OpenCode commands to initialize, query, and diagnose workspace control hubs.
+
+### Changed
+
+- Added optional reciprocal external-control references to multirepo workspace and ticket
+  coordination schemas while preserving existing hubs without a controller.
+
 ## [1.6.0] - 2026-08-04
 
 ### Added

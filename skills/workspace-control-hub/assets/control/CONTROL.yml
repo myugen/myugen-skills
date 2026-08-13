@@ -1,0 +1,5 @@
+schema_version: 1
+workspace_hub: ~/dev/workspaces/example
+purpose: Cross-ticket delivery control for Example
+language: en
+providers: {}

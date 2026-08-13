@@ -1,0 +1,17 @@
+schema_version: 1
+epic:
+  key: EXAMPLE-123
+  title: Example delivery
+  tracker_url: https://tracker.example.com/browse/EXAMPLE-123
+  lifecycle: active
+links:
+  specifications: []
+  decisions: []
+  plans: []
+updated_at: 2026-08-12
+items: []
+integration:
+  expected_order: []
+  stacked_changes: []
+external_dependencies: []
+rollout_gates: []

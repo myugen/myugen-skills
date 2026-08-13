@@ -22,6 +22,9 @@ A complete hub lives at `~/dev/workspaces/<hub>/` and contains:
 The hub and ticket roots are coordination directories, not repositories. Only their selected
 repository children are linked Git worktrees.
 
+An optional external control hub lives outside this layout. It is registered in `HUB.yml`, not
+created beneath the workspace root, and is governed by `workspace-control-hub`.
+
 ## Names and destination safety
 
 - Hub names, ticket names, source identifiers, and repository names must be non-empty, unique in
@@ -42,6 +45,9 @@ repository children are linked Git worktrees.
 
 ```yaml
 version: 1
+
+control_hub:
+  root: ~/dev/control-hubs/example
 
 sources:
   primary:
@@ -75,6 +81,7 @@ repositories:
 | Path | Required | Meaning |
 |------|----------|---------|
 | `version` | Recommended | Schema version. Use `1` for this document. |
+| `control_hub.root` | No | Absolute or home-relative external control-hub directory. Its `CONTROL.yml.workspace_hub` must resolve back to this hub. |
 | `sources` | Yes | Map of stable, hub-local source catalog identifiers. |
 | `sources.<id>.root` | Yes | Absolute or home-relative directory containing source clones. |
 | `repositories.required` | Yes | Repositories that describe the hub's normal working context. May be empty. |
@@ -163,6 +170,18 @@ repositories:
 Use actual values, not placeholders, in a live ticket workspace. Update the file whenever a
 repository, branch, role, or path changes, and record the reason in `DECISIONS.md` when the
 scope change is significant.
+
+When a ticket is tracked by an external epic controller, the same document also contains:
+
+```yaml
+control:
+  epic: EXAMPLE-123
+  epic_record: ~/dev/control-hubs/example/epics/EXAMPLE-123/EPIC.yml
+```
+
+`epic` and `epic_record` must either both be present or both be absent. They do not change ticket
+scope, repository containment, or archive safety. The epic record must reciprocally identify the
+ticket workspace; use `workspace-control-hub` to create or reconcile that association.
 
 ## Archived Tickets
 

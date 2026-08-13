@@ -33,7 +33,7 @@
     },
     {
       "name": "multirepo-workspaces",
-      "version": "sha256:a3beaa3085d168b654b3308c36dc9844ba815d48fedd4dd753841aa47aa74e91",
+      "version": "sha256:110a32b35eeba1f1aa7a7e031f75cf56f889eb6ffe0bcae39331e403e7508eb6",
       "files": [
         "SKILL.md",
         "agents/openai.yaml",
@@ -50,6 +50,21 @@
         "assets/hub/CLAUDE.md",
         "assets/hub/SYSTEM_MAP.md",
         "references/hub-schema.md"
+      ]
+    },
+    {
+      "name": "workspace-control-hub",
+      "version": "sha256:10150f5e92603b0181991d791381829d137d38a11567c2b09eeb1f6076c7b7ab",
+      "files": [
+        "SKILL.md",
+        "agents/openai.yaml",
+        "assets/control/AGENTS.md",
+        "assets/control/CLAUDE.md",
+        "assets/control/CONTROL.yml",
+        "assets/epic/EPIC.md",
+        "assets/epic/EPIC.yml",
+        "references/control-hub-schema.md",
+        "scripts/control-hub-doctor.py"
       ]
     }
   ]

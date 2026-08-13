@@ -16,6 +16,9 @@ reorganized into a monorepo.
 - Treat `~/dev/workspaces` as the workspace root unless the user identifies another one.
 - Before every create, inspect, change, or close operation, read the hub's `HUB.yml`, then
   `SYSTEM_MAP.md` and `AGENTS.md` when they exist.
+- When `HUB.yml` declares `control_hub.root`, also read that controller's `CONTROL.yml` and use
+  `workspace-control-hub` for epic registration, cross-workspace status, and reconciliation.
+  Its absence is valid and preserves the standalone workspace workflow.
 - Read [the hub schema](references/hub-schema.md) before creating or changing a hub, and when
   validating fields or resolving repository paths.
 
@@ -35,10 +38,13 @@ source clones and their roles; it is never itself a Git repository and does not 
 5. Before the first write, validate the hub name, destination containment, repository uniqueness,
    and any pre-existing hub state. Show the full file layout and repository inventory, then get
    explicit confirmation.
-6. Create `HUB.yml` from `assets/HUB.yml.example` and `SYSTEM_MAP.md`, `AGENTS.md`, and
+6. Optionally collect an external control-hub root. Validate that it is a user-approved location
+   separate from the workspace hub; do not initialize Git there. Create it through
+   `workspace-control-hub` before recording its reciprocal reference.
+7. Create `HUB.yml` from `assets/HUB.yml.example` and `SYSTEM_MAP.md`, `AGENTS.md`, and
    `CLAUDE.md` from `assets/hub/`, using actual values only. Do not leave scaffold placeholders
    in live files, and never run `git init`.
-7. On a compatible rerun, inspect and report the existing hub as a no-op. Resume a partial hub
+8. On a compatible rerun, inspect and report the existing hub as a no-op. Resume a partial hub
    only after confirming its existing files and planned additions; stop on incompatible content
    rather than overwriting or repairing it silently.
 
@@ -74,10 +80,13 @@ See [the hub schema](references/hub-schema.md) for names, layout, containment, a
 7. Inspect any existing ticket directory. An exact compatible rerun is a no-op; a partial ticket
    may be resumed after showing its actual worktrees and coordination files; incompatible content
    stops the operation. Never run `git init` in the workspace root, hub, or ticket directory.
-8. Initialize the ticket's root `AGENTS.md`, `CLAUDE.md`, and `.coordination/` files before
+8. When the hub has a control root and the ticket belongs to an epic, validate the epic's
+   `EPIC.yml` and reciprocal path before the first write. Record both `control.epic` and
+   `control.epic_record` in `REPOSITORIES.yml`; do not add either field when no epic is supplied.
+9. Initialize the ticket's root `AGENTS.md`, `CLAUDE.md`, and `.coordination/` files before
    creating worktrees. Set `REPOSITORIES.yml` to the actual hub and ticket with an empty
    `repositories` list, not placeholders.
-9. Add one worktree per selected repository. Use the source clone only as Git's worktree
+10. Add one worktree per selected repository. Use the source clone only as Git's worktree
    manager; do not change its checkout or files:
 
    ```sh
@@ -91,10 +100,13 @@ See [the hub schema](references/hub-schema.md) for names, layout, containment, a
    Resolve `<worktree-path>` fully under the ticket workspace because `git -C` changes the
    command's working directory to the source repository.
 
-10. After each successful worktree, immediately record its actual path, source, branch, role, and
+11. After each successful worktree, immediately record its actual path, source, branch, role, and
     criticality in `.coordination/REPOSITORIES.yml`. Initialize `PLAN.md`, `IMPACT.md`, and
     `DECISIONS.md` from known ticket context rather than inventing details.
-11. Re-run `git worktree list --porcelain` for each source and report the resulting ticket
+12. After the coordination root and every selected worktree are verified, register the reciprocal
+    workspace path in the epic with `workspace-control-hub`. If this update fails, keep the valid
+    workspace and report the control-hub drift; never remove a worktree to simulate atomicity.
+13. Re-run `git worktree list --porcelain` for each source and report the resulting ticket
     workspace, repositories, branches, and any safely resumable partial state.
 
 If a requested branch is attached to another worktree, do not force or detach it. Report its
@@ -105,6 +117,9 @@ or create a new branch from an agreed local ref.
 
 - Read the hub files and `.coordination/AGENTS.md`, `REPOSITORIES.yml`, and `PLAN.md` before
   changing an existing ticket workspace.
+- When `REPOSITORIES.yml` declares `control`, read the referenced epic before changing ticket
+  lifecycle metadata. Report an absent or mismatched reciprocal epic record as drift; do not
+  silently repair it.
 - Compare `REPOSITORIES.yml` with `git worktree list --porcelain` and each worktree's
   `git status --short --branch`. Report drift; do not silently repair or discard it.
 - To add a repository, repeat source validation, scope confirmation, branch-conflict checks,
@@ -149,6 +164,9 @@ worktrees, retains their branches, then moves the ticket's coordination root to
    original ticket path, removed worktrees, and retained branches. Move the verified ticket root
    to `<hub>/.archive/<ticket>/`. Do not alter `REPOSITORIES.yml`; it is the historical record of
    the archived effective scope.
+8. When the archived `REPOSITORIES.yml` declares `control`, update the reciprocal epic workspace
+   state and path only after the move succeeds. Archive is not a claim that the ticket completed,
+   merged, or changed tracker state. Report any failed control update as reconciliation drift.
 
 ## Delete A Workspace
 
