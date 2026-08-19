@@ -33,7 +33,7 @@
     },
     {
       "name": "multirepo-workspaces",
-      "version": "sha256:30d3cd37471f8daa0d77444d2e992dab1a5a178180e19b0417530a8c1c2e014a",
+      "version": "sha256:cd563d199255993f20cb887c316faadd8002ecb179e7fc5b395339eec7af7e2d",
       "files": [
         "SKILL.md",
         "agents/openai.yaml",
@@ -54,7 +54,7 @@
     },
     {
       "name": "workspace-control-hub",
-      "version": "sha256:10150f5e92603b0181991d791381829d137d38a11567c2b09eeb1f6076c7b7ab",
+      "version": "sha256:86c6f57bf94f0909fcd865611a60ead0d948bc105045f44a73bff5a4f27453fe",
       "files": [
         "SKILL.md",
         "agents/openai.yaml",

@@ -7,9 +7,10 @@ import test from "node:test"
 
 const doctor = new URL("../skills/workspace-control-hub/scripts/control-hub-doctor.py", import.meta.url)
 
-function run(workspaceHub, controlHub) {
+function run(workspaceHub, controlHub, environment = {}) {
   return spawnSync("python3", [doctor.pathname, "--workspace-hub", workspaceHub, "--control-hub", controlHub], {
     encoding: "utf8",
+    env: { ...process.env, ...environment },
   })
 }
 
@@ -110,4 +111,46 @@ test("reports mismatched reciprocal structured paths", async () => {
   assert.equal(result.status, 1)
   assert.match(result.stdout, /ERROR: HUB.yml control_hub.root does not match/)
   assert.match(result.stdout, /ERROR: CONTROL.yml workspace_hub does not match/)
+})
+
+test("reports the official global show-me skill for both supported agents", async () => {
+  const root = await mkdtemp(join(tmpdir(), "control-hub-doctor-"))
+  const workspaceHub = join(root, "workspaces", "example")
+  const controlHub = join(root, "knowledge")
+  const home = join(root, "home")
+
+  await mkdir(join(home, ".claude", "skills", "show-me"), { recursive: true })
+  await mkdir(join(home, ".agents"), { recursive: true })
+  await mkdir(workspaceHub, { recursive: true })
+  await mkdir(controlHub, { recursive: true })
+  await writeFile(join(workspaceHub, "HUB.yml"), "version: 1\n")
+  await writeFile(join(home, ".claude", "skills", "show-me", "SKILL.md"), "---\nname: show-me\ndescription: Visualize code\n---\n")
+  await writeFile(
+    join(home, ".agents", ".skill-lock.json"),
+    JSON.stringify({ version: 3, skills: { "show-me": { source: "humanlayer/skills" } } }),
+  )
+
+  const result = run(workspaceHub, controlHub, { HOME: home, XDG_STATE_HOME: join(home, ".state") })
+
+  assert.equal(result.status, 0)
+  assert.match(result.stdout, /OK: official humanlayer\/skills show-me is available for OpenCode and Claude Code/)
+})
+
+test("suggests the missing agent when show-me is installed for only OpenCode", async () => {
+  const root = await mkdtemp(join(tmpdir(), "control-hub-doctor-"))
+  const workspaceHub = join(root, "workspaces", "example")
+  const controlHub = join(root, "knowledge")
+  const home = join(root, "home")
+
+  await mkdir(join(home, ".config", "opencode", "skills", "show-me"), { recursive: true })
+  await mkdir(workspaceHub, { recursive: true })
+  await mkdir(controlHub, { recursive: true })
+  await writeFile(join(workspaceHub, "HUB.yml"), "version: 1\n")
+  await writeFile(join(home, ".config", "opencode", "skills", "show-me", "SKILL.md"), "---\nname: show-me\ndescription: Visualize code\n---\n")
+
+  const result = run(workspaceHub, controlHub, { HOME: home, XDG_STATE_HOME: join(home, ".state") })
+
+  assert.equal(result.status, 0)
+  assert.match(result.stdout, /WARN: show-me is available for OpenCode; missing for Claude Code/)
+  assert.match(result.stdout, /--agent claude-code/)
 })

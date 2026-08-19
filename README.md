@@ -123,10 +123,25 @@ The installed Claude plugin exposes three manual commands over the portable
 - `/myugen-skills:control:status [control-hub] [epic]` — reports ready work, blockers, delivery
   evidence, and freshness without changing local or external systems.
 - `/myugen-skills:control:doctor [workspace-hub] [control-hub]` — read-only structural diagnosis
-  for a structured controller or legacy Markdown epic boards; it never applies a migration.
+  for a structured controller or legacy Markdown epic boards; it never applies a migration. It also
+  reports whether the official `show-me` skill is locally available to OpenCode and Claude Code.
 
 Arguments are optional answers, not permission to skip validation. The commands are
 Claude-specific adapters; other agents use the same portable skill workflow directly.
+
+### Ticket Visualizations
+
+Every task in a new multirepo ticket workspace uses the official
+[`show-me`](https://github.com/humanlayer/skills/tree/main/plugins/show-me) skill before editing to
+show the intended change, and after validation to show the actual code and diff. Install it for the
+agents you use before starting ticket work:
+
+```sh
+npx skills add humanlayer/skills --skill show-me --global --agent opencode claude-code
+```
+
+The workspace doctor only inspects local skill files and lock metadata. It reports readiness and
+prints the appropriate install command when needed; it never installs the skill itself.
 
 ## Automatic capture (Claude Code)
 

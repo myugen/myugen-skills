@@ -15,6 +15,9 @@ Before changing code:
    <worktree>` to confirm a healthy index for that exact worktree before querying it. Prefer
    CodeGraph for structural exploration and call paths when it is healthy; pass that worktree as
    `projectPath` to MCP tools.
+6. Verify the official `show-me` skill from `humanlayer/skills` is available to the active agent.
+   If it is not, stop and suggest `npx skills add humanlayer/skills --skill show-me --global
+   --agent <agent>`.
 
 Work only in the declared worktrees for this ticket. Do not modify source clones, other ticket
 workspaces, or repositories outside the declared scope. Do not initialize a Git repository in
@@ -31,3 +34,8 @@ the user explicitly requests that operation.
 Do not initialize, rebuild, uninitialize, or manually delete a CodeGraph index outside an
 explicit workspace creation or archive operation. Report an absent, partial, failed, mismatched,
 or undeclared index as drift.
+
+For every task, use `show-me` before editing to present the intended change from the plan and
+current code. After implementation and validation, use it again from the actual code and diff,
+identifying any deviation from the intended shape. Use the smallest useful visual; do not create
+HTML or workspace artifacts unless the user asks.

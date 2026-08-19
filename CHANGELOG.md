@@ -2,6 +2,15 @@
 
 All notable changes to this project are documented in this file.
 
+## [1.9.0] - 2026-08-19
+
+### Added
+
+- Required the official `humanlayer/skills` `show-me` skill before and after every task in newly
+  created ticket workspaces, so agents present the intended implementation shape and actual diff.
+- Extended the read-only workspace-control doctor to report local `show-me` availability and suggest
+  installation without invoking `npx` or changing the environment.
+
 ## [1.8.0] - 2026-08-19
 
 ### Added

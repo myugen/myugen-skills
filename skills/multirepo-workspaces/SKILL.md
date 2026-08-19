@@ -19,6 +19,10 @@ reorganized into a monorepo.
 - When `HUB.yml` declares `control_hub.root`, also read that controller's `CONTROL.yml` and use
   `workspace-control-hub` for epic registration, cross-workspace status, and reconciliation.
   Its absence is valid and preserves the standalone workspace workflow.
+- Every ticket task requires the official `show-me` skill from `humanlayer/skills`. Before changing
+  code, confirm it is available to the active agent. If it is absent, stop and suggest
+  `npx skills add humanlayer/skills --skill show-me --global --agent <agent>`; do not substitute a
+  locally improvised version.
 - Read [the hub schema](references/hub-schema.md) before creating or changing a hub, and when
   validating fields or resolving repository paths.
 
@@ -137,6 +141,10 @@ or create a new branch from an agreed local ref.
 
 - Read the hub files and `.coordination/AGENTS.md`, `REPOSITORIES.yml`, and `PLAN.md` before
   changing an existing ticket workspace.
+- For every task, use the official `show-me` skill before editing to present the intended change
+  from the plan and current code. After implementation and validation, use it again to present the
+  actual code and diff, calling out any deviation from the intended shape. Use the smallest useful
+  visual, and do not write HTML or workspace artifacts unless the user explicitly asks.
 - When `REPOSITORIES.yml` declares `control`, read the referenced epic before changing ticket
   lifecycle metadata. Report an absent or mismatched reciprocal epic record as drift; do not
   silently repair it.
