@@ -113,7 +113,8 @@ The installed Claude plugin exposes three manual commands over the portable
   roles, and context; then creates the hub under `~/dev/workspaces/` after confirmation.
 - `/myugen-skills:workspace:new [hub-name] [ticket]` — asks which registered repositories are
   involved in a task, validates branches and local start points, then creates the selected linked
-  worktrees and coordination files after confirmation.
+  worktrees and coordination files after confirmation. A repository marked `codegraph: true` in
+  `HUB.yml` also receives a verified local CodeGraph index in its ticket worktree.
 - `/myugen-skills:workspace:archive [hub-name] [ticket]` — validates that every ticket worktree
   is clean, removes it without force while retaining its branch, then moves its coordination
   history to `<hub>/.archive/<ticket>/` after confirmation.

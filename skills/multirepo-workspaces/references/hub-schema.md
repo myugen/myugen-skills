@@ -61,6 +61,7 @@ repositories:
       source: primary
       role: core-api
       criticality: critical
+      codegraph: true
     - name: partner-api
       source: primary
       role: integrations
@@ -90,6 +91,7 @@ repositories:
 | `source` | Yes | Key from `sources`; never an implicit directory path. |
 | `role` | Yes | Short, functional purpose in this hub, such as `core-api`, `contracts`, or `frontend`. |
 | `criticality` | Yes | Operational importance to the vertical. Prefer `critical`, `high`, `medium`, or `low`. |
+| `codegraph` | No | When `true`, initialize and verify a local CodeGraph index in every selected ticket worktree. Absence means disabled. |
 
 Keep names and roles portable. Organization-specific topology belongs in each hub's live
 `HUB.yml` and `SYSTEM_MAP.md`, not in the skill.
@@ -116,6 +118,8 @@ Before creating a worktree, verify:
 5. The repository name is unique across `required` and `optional`.
 6. The proposed ticket worktree path does not collide with another file or worktree.
 7. The requested branch is not already attached to another worktree.
+8. If `codegraph: true`, the `codegraph` CLI is available before any workspace write. Do not run
+   `codegraph install`; the user manages agent integration separately.
 
 Do not fetch to satisfy validation. A missing branch or start point is a decision to surface,
 not permission to change local or remote state.
@@ -128,17 +132,18 @@ file layout and repository inventory before creating any file. Generated live fi
 actual values, not template placeholders.
 
 A rerun is compatible only when existing hub or ticket metadata agrees with the requested name,
-paths, repository source, role, criticality, branch, and start point. In that case, report it as
-a no-op or offer to add only missing scaffold files after confirmation.
+paths, repository source, role, criticality, CodeGraph policy, branch, and start point. In that
+case, report it as a no-op or offer to add only missing scaffold files after confirmation.
 
 When a ticket was partially created, inspect its coordination metadata and `git worktree list
 --porcelain` for every selected source. Reuse a worktree only when its path, source, branch, and
 HEAD match the requested state. Record every newly successful worktree immediately. On any
 failure, report the actual created state and stop; never roll it back automatically.
 
-Any mismatch, placeholder-filled live file, occupied destination, branch attached elsewhere, or
-worktree registered with different metadata is incompatible. Stop and ask the user how to proceed;
-never overwrite, detach, force, or silently repair it.
+Any mismatch, placeholder-filled live file, occupied destination, branch attached elsewhere,
+worktree registered with different metadata, or non-healthy declared CodeGraph index is
+incompatible. Stop and ask the user how to proceed; never overwrite, detach, force, or silently
+repair it.
 
 ## Required Versus Effective Scope
 
@@ -165,11 +170,27 @@ repositories:
     branch: feature/TICKET-123
     role: core-api
     criticality: critical
+    codegraph: true
 ```
 
 Use actual values, not placeholders, in a live ticket workspace. Update the file whenever a
-repository, branch, role, or path changes, and record the reason in `DECISIONS.md` when the
-scope change is significant.
+repository, branch, role, path, or CodeGraph policy changes, and record the reason in
+`DECISIONS.md` when the scope change is significant. The copied `codegraph` value is the
+effective ticket policy: later changes to `HUB.yml` must not silently alter an existing ticket.
+
+For an enabled worktree, create its graph only after its record is written:
+
+```text
+codegraph init <absolute-worktree-path>
+codegraph status --json <absolute-worktree-path>
+```
+
+The reported project path must be that exact worktree. Do not persist initialization status in
+`REPOSITORIES.yml`; query live status because it can become stale. A healthy matching index is a
+rerun no-op. An absent index may be initialized after confirmation. A failed, partial, or
+mismatched index is drift to report, not permission to run `init`, `index`, or `uninit`
+silently. An index for a worktree whose effective record does not enable CodeGraph is likewise
+unmanaged drift.
 
 When a ticket is tracked by an external epic controller, the same document also contains:
 
@@ -192,5 +213,16 @@ recorded worktree paths no longer exist.
 
 Before moving the ticket, create `.coordination/ARCHIVED.md` with the archive time, original
 ticket path, each removed worktree path, and the branch retained for each repository. Do not use
-an archive record to imply that a branch was merged, pushed, or deleted. An existing archive with
-overwriting history.
+an archive record to imply that a branch was merged, pushed, or deleted. An existing archive is a
+conflict; never overwrite history.
+
+Before removing an enabled worktree during archive, remove its healthy, declared local index only
+after archive confirmation:
+
+```text
+codegraph uninit <absolute-worktree-path> --force
+```
+
+Verify that `.codegraph/` is absent and the worktree is otherwise clean before `git worktree
+remove`. Do not manually delete a partial `.codegraph/` directory, remove an unmanaged index, or
+allow CodeGraph to install shared Git hooks: each condition is drift that stops the archive.

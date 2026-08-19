@@ -29,15 +29,16 @@ source clones and their roles; it is never itself a Git repository and does not 
 
 1. List existing hubs, then ask for the hub name, purpose, and system context when they were not
    supplied. Ask for source catalog roots and every repository that belongs to the project.
-2. For each repository, collect its source catalog, required/optional classification, role, and
-   criticality. Required means normal context, not automatic ticket scope.
+2. For each repository, collect its source catalog, required/optional classification, role,
+   criticality, and whether its ticket worktrees require `codegraph: true`. Required means normal
+   context, not automatic ticket scope. CodeGraph remains disabled when the field is absent.
 3. Validate every source catalog and source clone without changing it. Read its Git status and
    confirm the resolved path is the expected repository.
 4. Gather the branch convention and any durable context that belongs in `SYSTEM_MAP.md`. Do not
    invent organizational details that the user did not provide.
 5. Before the first write, validate the hub name, destination containment, repository uniqueness,
-   and any pre-existing hub state. Show the full file layout and repository inventory, then get
-   explicit confirmation.
+   and any pre-existing hub state. Show the full file layout and repository inventory, including
+   each repository's CodeGraph policy, then get explicit confirmation.
 6. Optionally collect an external control-hub root. Validate that it is a user-approved location
    separate from the workspace hub; do not initialize Git there. Create it through
    `workspace-control-hub` before recording its reciprocal reference.
@@ -75,11 +76,18 @@ See [the hub schema](references/hub-schema.md) for names, layout, containment, a
    already present locally unless the user explicitly asks for a remote operation. Check
    whether each branch is already attached to another worktree.
 6. Validate every selected source clone, local start point, destination, and branch attachment
-   before the first write. Show the proposed repository, source path, worktree path, branch,
-   role, and start point, then get explicit confirmation.
-7. Inspect any existing ticket directory. An exact compatible rerun is a no-op; a partial ticket
-   may be resumed after showing its actual worktrees and coordination files; incompatible content
-   stops the operation. Never run `git init` in the workspace root, hub, or ticket directory.
+   before the first write. When a selected repository declares `codegraph: true`, verify that the
+   `codegraph` CLI is available and inspect `codegraph help init` and `codegraph help status`.
+   Show the proposed repository, source path, worktree path, branch, role, start point, and
+   CodeGraph policy, then get explicit confirmation. Do not run `codegraph install`; agent setup
+   is a separate, user-managed prerequisite.
+7. Inspect any existing ticket directory. For each declared `codegraph: true` worktree, inspect
+   `codegraph status --json <worktree>` before any write: a healthy matching index is a no-op, an
+   absent index may be initialized only after confirmation, and a partial, failed, or mismatched
+   index is drift that stops the operation. An exact compatible rerun is otherwise a no-op; a
+   partial ticket may be resumed after showing its actual worktrees and coordination files;
+   incompatible content stops the operation. Never run `git init` in the workspace root, hub, or
+   ticket directory.
 8. When the hub has a control root and the ticket belongs to an epic, validate the epic's
    `EPIC.yml` and reciprocal path before the first write. Record both `control.epic` and
    `control.epic_record` in `REPOSITORIES.yml`; do not add either field when no epic is supplied.
@@ -100,9 +108,21 @@ See [the hub schema](references/hub-schema.md) for names, layout, containment, a
    Resolve `<worktree-path>` fully under the ticket workspace because `git -C` changes the
    command's working directory to the source repository.
 
-11. After each successful worktree, immediately record its actual path, source, branch, role, and
-    criticality in `.coordination/REPOSITORIES.yml`. Initialize `PLAN.md`, `IMPACT.md`, and
-    `DECISIONS.md` from known ticket context rather than inventing details.
+11. After each successful worktree, immediately record its actual path, source, branch, role,
+    criticality, and effective `codegraph: true` policy in `.coordination/REPOSITORIES.yml`.
+    For each enabled worktree, run:
+
+    ```sh
+    codegraph init <absolute-worktree-path>
+    codegraph status --json <absolute-worktree-path>
+    ```
+
+    Confirm that the reported index belongs to that exact worktree. Never initialize the hub,
+    ticket root, or source clone. If initialization or verification fails, stop immediately,
+    retain the valid worktree and its truthful metadata, and report a safely resumable partial
+    state; never remove the worktree or silently continue with later repositories. Initialize
+    `PLAN.md`, `IMPACT.md`, and `DECISIONS.md` from known ticket context rather than inventing
+    details.
 12. After the coordination root and every selected worktree are verified, register the reciprocal
     workspace path in the epic with `workspace-control-hub`. If this update fails, keep the valid
     workspace and report the control-hub drift; never remove a worktree to simulate atomicity.
@@ -123,7 +143,14 @@ or create a new branch from an agreed local ref.
 - Compare `REPOSITORIES.yml` with `git worktree list --porcelain` and each worktree's
   `git status --short --branch`. Report drift; do not silently repair or discard it.
 - To add a repository, repeat source validation, scope confirmation, branch-conflict checks,
-  and worktree creation, then update all affected coordination documents.
+  worktree creation, and enabled-CodeGraph initialization, then update all affected coordination
+  documents. Record its effective policy before invoking `codegraph init`.
+- For an enabled worktree on a compatible rerun, use `codegraph status --json <worktree>` before
+  any write. A healthy index for that exact worktree is a no-op. Offer to initialize an absent
+  index only after confirmation. Report a partial, failed, or mismatched index as drift and do
+  not silently re-run `init`, `index`, or `uninit`.
+- An index present for a worktree without `codegraph: true` is unmanaged drift. Report it; never
+  remove it automatically.
 - To review a workspace, report repository status, branch, source mapping, coordination state,
   and any mismatch. Reviewing requires no fetch or checkout.
 - To update code, first clarify whether the user means a local merge/rebase, a remote fetch or
@@ -142,29 +169,44 @@ worktrees, retains their branches, then moves the ticket's coordination root to
    exist. An already compatible archive is a no-op; any source or destination collision stops the
    operation.
 2. Before the first write, compare every registered repository with its source repository's
-   `git worktree list --porcelain` and inspect its worktree status. Report uncommitted changes,
-   untracked files, detectable unpushed commits from existing local refs, branch, source, and
-   worktree path. Stop if a worktree is dirty, metadata has drifted, an expected worktree is
-   missing, or preserving work is unclear.
+   `git worktree list --porcelain` and inspect its worktree status. For an enabled repository,
+   inspect `codegraph status --json <worktree>` and treat only its declared `.codegraph/`
+   directory as managed local metadata. Report uncommitted changes, untracked files, detectable
+   unpushed commits from existing local refs, branch, source, worktree path, and each managed
+   CodeGraph index to remove. Stop if there are changes outside managed CodeGraph metadata,
+   metadata has drifted, an expected worktree is missing, an enabled index is partial or
+   mismatched, or preserving work is unclear. An unmanaged `.codegraph/` directory is drift and
+   stops the archive.
 3. Inspect the ticket root. It may contain only the ticket adapters, `.coordination/`, and the
    declared worktree directories. Stop on unexpected files or directories rather than deleting or
    silently archiving them.
-4. Show every worktree to remove, every branch to retain, the archive destination, and the
-   archive record to create. Obtain explicit confirmation before removing anything.
-5. Remove each clean worktree through its source repository without `--force`:
+4. Show every managed CodeGraph index to remove, every worktree to remove, every branch to retain,
+   the archive destination, and the archive record to create. Obtain explicit confirmation before
+   removing anything.
+5. After confirmation, remove each enabled worktree's local CodeGraph index without changing its
+   source clone or shared Git configuration:
+
+   ```sh
+   codegraph uninit <absolute-worktree-path> --force
+   ```
+
+   Verify that `.codegraph/` is absent and that the worktree is clean. If uninitialization or the
+   clean verification fails, stop and preserve the active ticket as partial state; do not remove
+   the worktree or delete `.codegraph/` manually.
+6. Remove each clean worktree through its source repository without `--force`:
 
    ```sh
    git -C <source-repository> worktree remove <worktree-path>
    ```
 
-6. After each removal, verify that the worktree is absent from the source repository's worktree
+7. After each removal, verify that the worktree is absent from the source repository's worktree
    list and that its branch remains. If a removal fails, stop immediately. Leave the ticket's
    coordination root in place and report the actual, resumable partial state; do not archive it.
-7. After every removal succeeds, create `.coordination/ARCHIVED.md` with the archive time,
+8. After every removal succeeds, create `.coordination/ARCHIVED.md` with the archive time,
    original ticket path, removed worktrees, and retained branches. Move the verified ticket root
    to `<hub>/.archive/<ticket>/`. Do not alter `REPOSITORIES.yml`; it is the historical record of
    the archived effective scope.
-8. When the archived `REPOSITORIES.yml` declares `control`, update the reciprocal epic workspace
+9. When the archived `REPOSITORIES.yml` declares `control`, update the reciprocal epic workspace
    state and path only after the move succeeds. Archive is not a claim that the ticket completed,
    merged, or changed tracker state. Report any failed control update as reconciliation drift.
 

@@ -12,6 +12,13 @@ its local `AGENTS.md` or `CLAUDE.md` when present. Run Git and repository comman
 specific worktree, or target it explicitly with `git -C`; never run repository-wide Git
 operations from the ticket root.
 
+When that repository declares `codegraph: true`, first check that its local index is healthy for
+the exact worktree with `codegraph status --json <worktree>`. Use its CodeGraph tools or CLI to
+explore code structure and call paths; pass that worktree as `projectPath` to MCP tools. Report an
+absent, partial, failed, mismatched, or
+undeclared index as drift; do not initialize, rebuild, or remove it outside an explicit workspace
+lifecycle operation.
+
 Keep `.coordination/PLAN.md`, `IMPACT.md`, and `DECISIONS.md` current as implementation reveals
 new scope, impact, or decisions. Do not work outside the declared repositories, alter source
 clones, or perform remote, destructive, worktree-removal, or branch-deletion operations unless

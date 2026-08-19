@@ -7,9 +7,10 @@ export const commands = Object.freeze({
     template: `Follow the multirepo-workspaces skill's Create a Hub workflow as the authoritative
 portable procedure. Treat $ARGUMENTS as an optional hub-name answer; ask for every missing or
 ambiguous value. Validate all source clones and destinations, show the complete hub layout and
-repository inventory, and obtain explicit confirmation before writing. Create HUB.yml,
-SYSTEM_MAP.md, AGENTS.md, and CLAUDE.md under ~/dev/workspaces/<hub>, never a Git repository.
-Do not overwrite, fetch, clone, or alter a source checkout.`,
+    repository inventory including optional per-repository CodeGraph policies, and obtain explicit
+    confirmation before writing. Create HUB.yml, SYSTEM_MAP.md, AGENTS.md, and CLAUDE.md under
+    ~/dev/workspaces/<hub>, never a Git repository. Do not overwrite, fetch, clone, or alter a
+    source checkout.`,
   }),
   "workspace-new": Object.freeze({
     description: "Interactively create a ticket workspace with selected repository worktrees",
@@ -17,10 +18,10 @@ Do not overwrite, fetch, clone, or alter a source checkout.`,
     template: `Follow the multirepo-workspaces skill's Create a Ticket Workspace workflow as the
 authoritative portable procedure. Treat $ARGUMENTS as optional hub-name and ticket answers; ask
 which registered repositories are involved. Validate local refs, branches, source clones, and
-destinations; show the complete plan and obtain explicit confirmation before creating coordination
-files or worktrees. Record only successfully created worktrees and report resumable partial state.
-    Never fetch, pull, push, reset, clean, force, overwrite existing workspace content, or mutate
-    source checkouts.`,
+    destinations. For repositories configured with codegraph: true, verify the CodeGraph CLI before
+    the first write; record the effective policy before initializing and verifying that worktree's
+    local index. Stop and report resumable partial state if initialization fails. Never fetch, pull,
+    push, reset, clean, force, overwrite existing workspace content, or mutate source checkouts.`,
   }),
   "workspace-archive": Object.freeze({
     description: "Interactively archive a ticket workspace while preserving branches and metadata",
@@ -31,10 +32,11 @@ for missing or ambiguous values. Before the first write, validate every declared
 its source repository, inspect status and detectable unpushed commits from existing local refs,
 and reject dirty worktrees, drift, unexpected ticket-root content, or archive collisions. Show all
 worktrees to remove, retained branches, and the archive destination, then obtain explicit
-confirmation. Remove clean linked worktrees without force, preserve their branches, and move the
-verified ticket coordination root to <hub>/.archive/<ticket> only after every removal succeeds.
-Never fetch, pull, push, reset, clean, force, overwrite, delete branches, or mutate source
-checkouts.`,
+    confirmation. Remove only declared healthy local CodeGraph indexes with codegraph uninit
+    <worktree> --force, verify clean worktrees, then remove linked worktrees without force and
+    preserve their branches. Move the verified ticket coordination root to <hub>/.archive/<ticket>
+    only after every removal succeeds. Never fetch, pull, push, reset, clean, force, overwrite,
+    delete branches, or mutate source checkouts.`,
     }),
   "workspace-control-init": Object.freeze({
     description: "Interactively create an external control hub for one workspace vertical",

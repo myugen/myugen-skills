@@ -16,6 +16,7 @@ repositories:
       source: primary
       role: core-api
       criticality: critical
+      codegraph: true
     - name: partner-api
       source: primary
       role: integrations

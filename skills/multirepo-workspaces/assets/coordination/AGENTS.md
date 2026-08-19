@@ -11,6 +11,10 @@ Before changing code:
 4. When `REPOSITORIES.yml` declares `control`, read the referenced epic record before working on
    the ticket. It summarizes cross-ticket dependencies and readiness; it does not replace the
    ticket plan or tracker.
+5. When the selected repository declares `codegraph: true`, use `codegraph status --json
+   <worktree>` to confirm a healthy index for that exact worktree before querying it. Prefer
+   CodeGraph for structural exploration and call paths when it is healthy; pass that worktree as
+   `projectPath` to MCP tools.
 
 Work only in the declared worktrees for this ticket. Do not modify source clones, other ticket
 workspaces, or repositories outside the declared scope. Do not initialize a Git repository in
@@ -23,3 +27,7 @@ coordination documents before working in the added repository.
 
 Do not fetch, pull, push, delete worktrees or branches, or use destructive Git commands unless
 the user explicitly requests that operation.
+
+Do not initialize, rebuild, uninitialize, or manually delete a CodeGraph index outside an
+explicit workspace creation or archive operation. Report an absent, partial, failed, mismatched,
+or undeclared index as drift.

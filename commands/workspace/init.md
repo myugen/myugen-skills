@@ -13,7 +13,8 @@ ambiguous value.
 1. List existing hubs under `~/dev/workspaces/`, then ask which project the user wants to create
    when no usable hub name was supplied.
 2. Collect the hub purpose, source catalog roots, repository inventory, required/optional
-   classification, role, criticality, system context, and branch convention.
+   classification, role, criticality, optional per-repository `codegraph: true` policy, system
+   context, and branch convention.
 3. Validate every proposed source clone and destination before writing anything. Show the complete
    hub layout and repository inventory, then obtain explicit confirmation.
 4. Create the hub only after confirmation. It must contain `HUB.yml`, `SYSTEM_MAP.md`,

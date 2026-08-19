@@ -2,6 +2,15 @@
 
 All notable changes to this project are documented in this file.
 
+## [1.8.0] - 2026-08-19
+
+### Added
+
+- Added optional per-repository `codegraph: true` workspace policies that initialize and verify a
+  local CodeGraph index for selected ticket worktrees.
+- Added safe CodeGraph index handling to workspace reruns and archiving without mutating source
+  clones, shared Git settings, or unmanaged indexes.
+
 ## [1.7.0] - 2026-08-12
 
 ### Added

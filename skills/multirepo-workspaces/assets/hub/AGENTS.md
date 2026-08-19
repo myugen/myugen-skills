@@ -14,6 +14,8 @@ alter source-clone checkouts, create a repository in this directory, or work out
 declared repository scope.
 
 Before creating a ticket, validate its selected source repositories, local refs, branches, and
-destinations. Record only successfully created worktrees in the ticket's `.coordination/`
-metadata. Do not fetch, pull, push, reset, clean, force, remove worktrees, or delete branches
-unless the user explicitly requests it.
+destinations. Honor each selected repository's optional `codegraph: true` policy from `HUB.yml`,
+record that effective policy in the ticket's `.coordination/REPOSITORIES.yml`, and initialize
+only the resulting worktree after confirmation. Record only successfully created worktrees in the
+ticket's `.coordination/` metadata. Do not fetch, pull, push, reset, clean, force, remove
+worktrees, or delete branches unless the user explicitly requests it.

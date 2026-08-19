@@ -15,10 +15,12 @@ for every missing or ambiguous value.
    instruction to create every worktree.
 2. Confirm a branch and existing local start point for every selected repository. Validate all
    source clones, local refs, worktree collisions, and branch attachments before writing.
-3. Show the complete plan: ticket path, selected repositories, source paths, worktree paths,
-   branches, and start points. Obtain explicit confirmation before creating coordination files or
-   worktrees.
-4. Create full linked Git worktrees and coordination metadata, recording only worktrees that were
-   actually created. Report a truthful, resumable partial state if a later step fails.
+3. Verify the CodeGraph CLI for every selected repository configured with `codegraph: true`. Show
+   the complete plan: ticket path, selected repositories, source paths, worktree paths, branches,
+   start points, and CodeGraph policies. Obtain explicit confirmation before creating coordination
+   files or worktrees.
+4. Create full linked Git worktrees and coordination metadata, recording each effective CodeGraph
+   policy before initializing its worktree-local index. Report a truthful, resumable partial state
+   if a later step fails.
 5. Never fetch, pull, push, reset, clean, force, overwrite existing workspace content, or mutate
    source checkouts.
