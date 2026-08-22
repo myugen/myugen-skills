@@ -4,6 +4,19 @@ version: 1
 control_hub:
   root: ~/dev/control-hubs/example
 
+# Optional ordered memory. The managed primary is writable only through knowledge-vault;
+# later local entries are read-only context.
+memory:
+  - name: vault
+    type: local
+    path: ~/Documents/vaults/example
+    skill: knowledge-vault
+    config:
+      vault: Example
+  - name: knowledge-hub
+    type: local
+    path: ~/dev/example/knowledge-hub
+
 sources:
   primary:
     root: ~/dev/source-catalog

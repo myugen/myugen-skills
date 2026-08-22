@@ -10,7 +10,7 @@
     },
     {
       "name": "knowledge-vault",
-      "version": "sha256:5811f3e418d644af31997da032aac52dc511132e646b9b5cd39380bdafcf2320",
+      "version": "sha256:59f9793a83b9b6ff82d3a460b9d3597cd58fb917796a2c84b2d2b48f62365962",
       "files": [
         "SKILL.md",
         "assets/config.example.json",
@@ -28,12 +28,13 @@
         "scripts/append-file.sh",
         "scripts/next-id.sh",
         "scripts/resolve-vault.sh",
+        "scripts/resolve-workspace-memory.py",
         "scripts/run-with-timeout.sh"
       ]
     },
     {
       "name": "multirepo-workspaces",
-      "version": "sha256:cd563d199255993f20cb887c316faadd8002ecb179e7fc5b395339eec7af7e2d",
+      "version": "sha256:cafad95774e5cb75994d9a8180006ba16da962aa3e0682d706dce1879548960c",
       "files": [
         "SKILL.md",
         "agents/openai.yaml",

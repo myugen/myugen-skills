@@ -50,7 +50,9 @@ fi
 # Never launch Obsidian just to log — if it's not already running, skip silently.
 pgrep -x Obsidian >/dev/null 2>&1 || exit 0
 
-VAULT="$(cd "$CWD" 2>/dev/null && "$KV_SCRIPTS/resolve-vault.sh" 2>/dev/null)"
+# Fail-closed workspace resolution prevents an automatic note from landing in a secondary or
+# user-level fallback vault when explicit workspace memory is unusable.
+VAULT="$(cd "$CWD" 2>/dev/null && "$KV_SCRIPTS/resolve-vault.sh" --workspace-owned 2>/dev/null)"
 [ -z "$VAULT" ] && exit 0
 
 if ! (cd "$CWD" 2>/dev/null && git rev-parse --is-inside-work-tree >/dev/null 2>&1); then
@@ -138,7 +140,7 @@ except Exception:
   fi
 fi
 
-NEXT_ID="$("$KV_SCRIPTS/next-id.sh" SESS 2>/dev/null)"
+NEXT_ID="$(OBSIDIAN_VAULT="$VAULT" "$KV_SCRIPTS/next-id.sh" SESS 2>/dev/null)"
 [ -n "$NEXT_ID" ] || exit 0
 
 # Sanitize the repo name for use in the note's filename: a dot anywhere before the final .md

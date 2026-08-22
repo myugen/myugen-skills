@@ -16,6 +16,11 @@ reorganized into a monorepo.
 - Treat `~/dev/workspaces` as the workspace root unless the user identifies another one.
 - Before every create, inspect, change, or close operation, read the hub's `HUB.yml`, then
   `SYSTEM_MAP.md` and `AGENTS.md` when they exist.
+- When `HUB.yml` declares memory, search it in order by ticket, topic, and named people before
+  planning: use `knowledge-vault` for the managed primary, then inspect each later local path as
+  read-only context. If the skill is unavailable, read the primary path with read-only tools and
+  report degraded operation. Never write directly to a declared memory path or promote a secondary
+  source when the primary is unavailable. Memory read failures do not block the main task.
 - When `HUB.yml` declares `control_hub.root`, also read that controller's `CONTROL.yml` and use
   `workspace-control-hub` for epic registration, cross-workspace status, and reconciliation.
   Its absence is valid and preserves the standalone workspace workflow.
@@ -36,22 +41,32 @@ source clones and their roles; it is never itself a Git repository and does not 
 2. For each repository, collect its source catalog, required/optional classification, role,
    criticality, and whether its ticket worktrees require `codegraph: true`. Required means normal
    context, not automatic ticket scope. CodeGraph remains disabled when the field is absent.
-3. Validate every source catalog and source clone without changing it. Read its Git status and
+3. Ask whether the hub needs workspace memory. It is optional. When requested, collect the ordered
+   local sources: the first must be a `knowledge-vault` primary with its filesystem path and exact
+   Obsidian vault name; later entries are skill-less read-only paths. Follow the canonical subset
+   in the hub schema rather than emitting arbitrary YAML.
+4. Validate every source catalog and source clone without changing it. Read its Git status and
    confirm the resolved path is the expected repository.
-4. Gather the branch convention and any durable context that belongs in `SYSTEM_MAP.md`. Do not
+5. Validate configured memory without changing it. Normalize every path and report missing or
+   unreadable paths as warnings. When Obsidian is already available, check that `obsidian
+   vault="<vault>" vault info=path` identifies the primary path. Stop on malformed schema; surface
+   path warnings or mismatches for user direction rather than creating anything or reordering the
+   stack.
+6. Gather the branch convention and any durable context that belongs in `SYSTEM_MAP.md`. Do not
    invent organizational details that the user did not provide.
-5. Before the first write, validate the hub name, destination containment, repository uniqueness,
-   and any pre-existing hub state. Show the full file layout and repository inventory, including
-   each repository's CodeGraph policy, then get explicit confirmation.
-6. Optionally collect an external control-hub root. Validate that it is a user-approved location
+7. Before the first write, validate the hub name, destination containment, repository uniqueness,
+   and any pre-existing hub state. Show the full file layout, repository inventory, each
+   repository's CodeGraph policy, and the ordered writable/read-only memory roles, then get
+   explicit confirmation.
+8. Optionally collect an external control-hub root. Validate that it is a user-approved location
    separate from the workspace hub; do not initialize Git there. Create it through
    `workspace-control-hub` before recording its reciprocal reference.
-7. Create `HUB.yml` from `assets/HUB.yml.example` and `SYSTEM_MAP.md`, `AGENTS.md`, and
+9. Create `HUB.yml` from `assets/HUB.yml.example` and `SYSTEM_MAP.md`, `AGENTS.md`, and
    `CLAUDE.md` from `assets/hub/`, using actual values only. Do not leave scaffold placeholders
    in live files, and never run `git init`.
-8. On a compatible rerun, inspect and report the existing hub as a no-op. Resume a partial hub
-   only after confirming its existing files and planned additions; stop on incompatible content
-   rather than overwriting or repairing it silently.
+10. On a compatible rerun, inspect and report the existing hub as a no-op. Resume a partial hub
+    only after confirming its existing files and planned additions; stop on incompatible content
+    rather than overwriting or repairing it silently.
 
 See [the hub schema](references/hub-schema.md) for names, layout, containment, and rerun rules.
 
@@ -141,6 +156,8 @@ or create a new branch from an agreed local ref.
 
 - Read the hub files and `.coordination/AGENTS.md`, `REPOSITORIES.yml`, and `PLAN.md` before
   changing an existing ticket workspace.
+- Resolve configured memory from the workspace hub before planning. Read secondary local memory
+  in declaration order, but persist only through the primary `knowledge-vault` skill.
 - For every task, use the official `show-me` skill before editing to present the intended change
   from the plan and current code. After implementation and validation, use it again to present the
   actual code and diff, calling out any deviation from the intended shape. Use the smallest useful
@@ -240,6 +257,11 @@ permission to delete history.
   separate explicit request and fresh safety check.
 - Never force a branch already used by another worktree.
 - Never touch repositories outside the ticket's declared effective scope.
+- Never write directly to `memory[].path`, use a secondary memory as a fallback writer, or continue
+  persistence when an explicit memory declaration is malformed.
+- At the end of work, persist only context that will outlive the ticket. If the primary skill or
+  its prerequisites are unavailable, report that persistence did not occur and continue without a
+  direct filesystem fallback.
 - Show the repositories and branches before any ambiguous operation.
 - Never overwrite a hub, ticket, coordination file, or adapter file. Report incompatible or
   partial state and require confirmation before resuming.
@@ -248,8 +270,8 @@ permission to delete history.
 
 ## Resources
 
-- `references/hub-schema.md` documents `HUB.yml`, path resolution, validation rules, and the
-  distinction between hub context and effective ticket scope.
+- `references/hub-schema.md` documents `HUB.yml`, workspace memory, path resolution, validation
+  rules, and the distinction between hub context and effective ticket scope.
 - `assets/HUB.yml.example` and `assets/hub/` are provider-neutral hub scaffolding.
 - `assets/AGENTS.md` and `assets/CLAUDE.md` are ticket-root adapters that load or point agents
   to the coordination scope and plan while preserving the multi-repository boundary.

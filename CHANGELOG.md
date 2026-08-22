@@ -2,6 +2,22 @@
 
 All notable changes to this project are documented in this file.
 
+## [1.10.0] - 2026-08-23
+
+### Added
+
+- Added optional ordered workspace memory to `HUB.yml`, with one writable local
+  `knowledge-vault` primary and read-only local secondary sources.
+- Added a stdlib-only canonical memory reader with active, archived, hub-subdirectory, and nested
+  worktree discovery.
+
+### Changed
+
+- Made vault resolution and Claude lifecycle hooks workspace-aware while preserving user-level
+  configuration for hubs without memory.
+- Made malformed explicit workspace memory fail closed so automatic and agent-authored writes
+  cannot silently target a fallback vault.
+
 ## [1.9.0] - 2026-08-19
 
 ### Added

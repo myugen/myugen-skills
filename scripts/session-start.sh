@@ -31,10 +31,31 @@ except Exception:
   fi
 fi
 
-VAULT="$(cd "$CWD" 2>/dev/null && "$RESOLVE_VAULT" 2>/dev/null)"
+# Missing fallback config remains a silent no-op. A malformed explicit workspace declaration is
+# useful context because fail-closed resolution disables persistence for the session.
+RESOLVE_ERROR_FILE="$(mktemp)"
+if ! VAULT="$(cd "$CWD" 2>/dev/null && "$RESOLVE_VAULT" --workspace-owned 2>"$RESOLVE_ERROR_FILE")"; then
+  RESOLVE_ERROR="$(cat "$RESOLVE_ERROR_FILE")"
+  rm -f "$RESOLVE_ERROR_FILE"
+  if [[ "$RESOLVE_ERROR" == *"workspace memory is unusable"* ]]; then
+    python3 - "$RESOLVE_ERROR" <<'PYEOF'
+import json, sys
+print(json.dumps({
+    "hookSpecificOutput": {
+        "hookEventName": "SessionStart",
+        "additionalContext": (
+            "Workspace memory is configured but unusable, so knowledge-vault writes and "
+            "automatic session capture are disabled. Fix HUB.yml before persisting. " + sys.argv[1]
+        ),
+    }
+}))
+PYEOF
+  fi
+  exit 0
+fi
+rm -f "$RESOLVE_ERROR_FILE"
 
 if [ -z "$VAULT" ]; then
-  # No config yet — stay silent rather than nagging every session start.
   exit 0
 fi
 

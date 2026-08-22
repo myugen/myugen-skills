@@ -48,7 +48,9 @@ if [ -z "$(cd "$CWD" && git status --porcelain 2>/dev/null)" ]; then
   exit 0
 fi
 
-VAULT="$(cd "$CWD" 2>/dev/null && "$RESOLVE_VAULT" 2>/dev/null)"
+# The shared resolver returns a vault only for the valid workspace primary (or legacy behavior when
+# workspace memory is absent), so malformed/foreign primaries cannot trigger this nudge.
+VAULT="$(cd "$CWD" 2>/dev/null && "$RESOLVE_VAULT" --workspace-owned 2>/dev/null)"
 [ -n "$VAULT" ] || exit 0
 
 pgrep -x Obsidian >/dev/null 2>&1 || exit 0

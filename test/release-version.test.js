@@ -1,4 +1,5 @@
 import assert from "node:assert/strict"
+import { spawnSync } from "node:child_process"
 import { readFile } from "node:fs/promises"
 import test from "node:test"
 
@@ -17,4 +18,13 @@ test("keeps npm and Claude plugin versions synchronized", async () => {
 
   assert.equal(npmVersion, pluginVersion)
   assert.equal(npmVersion, marketplaceVersion)
+})
+
+test("keeps the generated skill catalog current", () => {
+  const result = spawnSync("python3", ["scripts/generate-skill-index.py", "--check"], {
+    cwd: new URL("../", import.meta.url),
+    encoding: "utf8",
+  })
+
+  assert.equal(result.status, 0, result.stderr)
 })

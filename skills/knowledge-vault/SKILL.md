@@ -1,12 +1,12 @@
 ---
 name: knowledge-vault
-description: Manage the knowledge vault — an Obsidian vault, accessed via the obsidian CLI, used as a shared knowledge base for AI agents and humans working together. It stores AI-generated plans, decisions, and working-session notes alongside foundational knowledge about people, teams, and projects. Use this skill whenever the user or an agent needs to save, log, or update a plan, decision, or session note; create or look up a note about a person, team, or project; capture durable/foundational knowledge; link related notes together; or answer "what do we know about X" from the vault. Trigger this any time context is worth persisting for later — even if the user doesn't say "Obsidian" or "vault" explicitly, e.g. "remember that we decided...", "log this plan", "who owns the ticketing project".
+description: Manages the active knowledge vault — an Obsidian vault selected from workspace memory or user-level configuration and accessed via the obsidian CLI. It stores AI-generated plans, decisions, and working-session notes alongside foundational knowledge about people, teams, and projects. Use this skill whenever the user or an agent needs to save, log, or update a plan, decision, or session note; create or look up a note about a person, team, or project; capture durable/foundational knowledge; link related notes together; or answer "what do we know about X" from the vault. Trigger this any time context is worth persisting for later — even if the user doesn't say "Obsidian" or "vault" explicitly, e.g. "remember that we decided...", "log this plan", "who owns the ticketing project".
 ---
 
 # Knowledge Vault
 
-This is a single Obsidian vault that acts as long-term memory shared between AI
-agents and humans. Agents write plans, decisions, and session notes into it as they work;
+This operates one selected Obsidian vault as long-term memory shared between AI agents and
+humans. Agents write plans, decisions, and session notes into it as they work;
 both agents and humans read from it to stay grounded in real context (real people, real
 teams, real decisions) instead of re-deriving or guessing at things that are already known.
 
@@ -25,14 +25,19 @@ Two things make this different from a normal file-write task:
   a command exists — it's always up to date and is the source of truth over this skill.
 - **Resolve the vault before doing anything else** — never rely on the CLI's own default
   (whichever vault is currently focused, or the vault in the working directory), since this
-  skill runs from inside arbitrary project repos where that default is often wrong. Instead:
-  1. Read `${XDG_CONFIG_HOME:-$HOME/.config}/knowledge-vault/config.json`. If it doesn't
-     exist, stop and follow `references/setup.md` rather than guessing a vault.
-  2. Resolve the vault name for the current working directory (`scripts/resolve-vault.sh`
-     does this, or apply the rule by hand — see `references/cli-usage.md`).
-  3. Pass that name as `vault="<name>"` on **every** `obsidian` command for the rest of the
-     task.
-- One-time setup (CLI pairing, the config file, and installing templates into the vault) is
+  skill runs from inside arbitrary project repos where that default is often wrong. Run
+  `scripts/resolve-vault.sh` from the actual working directory, or apply the rule in
+  `references/cli-usage.md`: explicit `$OBSIDIAN_VAULT`, then a valid primary in the workspace's
+  `HUB.yml`, then the user-level `config.json` fallback. If an explicit workspace declaration is
+  malformed, stop; never route a write to the fallback vault.
+- Pass the resolved name as `vault="<name>"` on **every** `obsidian` command for the rest of the
+  task.
+- A workspace may list later local memory paths as read-only context. Follow the workspace's
+  instructions when reading them, but this skill writes only to the managed primary through the
+  `obsidian` CLI. If the skill or Obsidian is unavailable, the workspace may search the primary
+  path with read-only file tools and report degraded operation. Never edit `memory[].path`
+  directly, and never block the main task only because memory cannot be read.
+- One-time setup (CLI pairing, optional fallback config, and installing templates into the vault) is
   covered end-to-end in `references/setup.md` — run through it once per machine.
 
 ## Vault structure
@@ -121,10 +126,11 @@ below.**
 
 ### 4. Session notes are automatic — don't create them yourself
 
-Every session, the `SessionEnd` hook writes exactly one factual `SESS-NNNN` note (repo, branch,
-commits, files changed, duration, `session_id`) regardless of what happened during the session.
-Because of this, **you should never create a Session note yourself** — doing so produces a
-second note for the same session instead of one.
+When the Claude hooks are installed, automatic capture is enabled, and this skill resolves a valid
+writable vault, the `SessionEnd` hook writes one factual `SESS-NNNN` note (repo, branch, commits,
+files changed, duration, `session_id`) regardless of what happened during the session. Because of
+this, **you should never create a Session note yourself** — doing so can produce a second note for
+the same session instead of one.
 
 If something from the session is worth adding beyond that automatic metadata (a summary, a
 noteworthy tangent), don't create a new Session note — find the one this session already wrote
@@ -204,8 +210,10 @@ its `updated` property to today. `created` is set once and never changes.
 - `assets/templates/` — the seven template files (`Person.md`, `Team.md`, `Project.md`,
   `Foundation.md`, `Plan.md`, `Decision.md`, `Session.md`) to install into the vault's
   `Templates/` folder.
-- `scripts/resolve-vault.sh` — prints the vault name to use for the current working
-  directory, per the config file's rules.
+- `scripts/resolve-vault.sh` — prints the vault name to use for the current working directory,
+  applying explicit override, workspace memory, and user-level fallback precedence.
+- `scripts/resolve-workspace-memory.py` — stdlib-only canonical reader used by the resolver and
+  hooks; it reports workspace memory as `absent`, `valid`, or `malformed` JSON.
 - `scripts/append-file.sh` — appends a content file to an exact note path without hand-escaping
   multiline text.
 - `scripts/run-with-timeout.sh` — bounds an external CLI invocation on macOS and Linux.

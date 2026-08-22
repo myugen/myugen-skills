@@ -45,9 +45,8 @@ inside arbitrary project repos, where that default frequently points at the wron
 none), and there's no way to fix it from inside the repo without dirtying it with
 vault-selection config that doesn't belong there.
 
-Instead, resolve the vault from the user-level config at
-`${XDG_CONFIG_HOME:-$HOME/.config}/knowledge-vault/config.json` before doing anything else,
-and pass it explicitly on every command:
+Instead, resolve the vault from the current workspace or user-level fallback before doing
+anything else, and pass it explicitly on every command:
 
 ```sh
 VAULT=$(bash scripts/resolve-vault.sh)   # or apply the rule below by hand
@@ -61,20 +60,28 @@ than parsing `vaults verbose`:
 obsidian vault="$VAULT" vault info=path
 ```
 
-If that config file doesn't exist yet, stop and follow `references/setup.md` — don't guess a
-vault name.
+If resolution fails, stop and read the diagnostic. Do not guess a vault name or silently target
+the CLI default.
 
 ### Resolution rule (what `resolve-vault.sh` does)
 
 1. If the `OBSIDIAN_VAULT` environment variable is set, use it — a one-off override that wins
    over everything else.
-2. Otherwise, find the working root: `git rev-parse --show-toplevel` if inside a repo, else the
-   current directory.
-3. Look up `config.json`'s `repositories` map (path → vault name) for keys that are a prefix
+2. Otherwise, discover the enclosing workspace in two passes. First walk ancestors for a ticket's
+   `.coordination/REPOSITORIES.yml` and derive its active or archived hub. If none is found, walk
+   ancestors for the nearest `HUB.yml`.
+3. If that hub declares non-empty `memory`, require its first entry to be a valid local
+   `knowledge-vault` primary and use `memory[0].config.vault`. A malformed explicit declaration
+   fails closed: do not consult `config.json` or write anywhere. Later memory entries are read-only
+   and are never vault fallbacks.
+4. If workspace memory is absent or `memory: []`, find the working root with `git rev-parse
+   --show-toplevel` when inside a repo, else use the current directory. Look up `config.json`'s
+   `repositories` map (path → vault name) for keys that are a prefix
    of that root. If more than one matches, the **longest** (most specific) one wins.
-4. If nothing matches, fall back to `config.json`'s `defaultVault`.
+5. If nothing matches, fall back to `config.json`'s `defaultVault`.
 
-The config file's full shape is documented in `references/setup.md`.
+The fallback config's full shape is documented in `references/setup.md`; the workspace schema and
+canonical YAML subset are documented in `../../multirepo-workspaces/references/hub-schema.md`.
 
 Every example below assumes you've already run `VAULT=$(bash scripts/resolve-vault.sh)` and carries
 `vault="$VAULT"` accordingly — that's not optional decoration, it's the fix for the default

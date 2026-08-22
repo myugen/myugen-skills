@@ -1,9 +1,9 @@
 # Hub Schema
 
 `HUB.yml` is the human-readable inventory for one functional vertical. It maps logical source
-catalog names to directories of independent Git clones, then classifies repositories by how
-commonly the hub needs them. It is not a monorepo manifest and does not grant permission to
-change source clones.
+catalog names to directories of independent Git clones, classifies repositories by how commonly
+the hub needs them, and may declare the local memory sources agents use in that workspace. It is
+not a monorepo manifest and does not grant permission to change source clones or memory paths.
 
 ## Hub Layout
 
@@ -49,6 +49,17 @@ version: 1
 control_hub:
   root: ~/dev/control-hubs/example
 
+memory:
+  - name: vault
+    type: local
+    path: ~/Documents/vaults/example
+    skill: knowledge-vault
+    config:
+      vault: Example
+  - name: knowledge-hub
+    type: local
+    path: ~/dev/example/knowledge-hub
+
 sources:
   primary:
     root: ~/dev/source-catalog
@@ -83,6 +94,12 @@ repositories:
 |------|----------|---------|
 | `version` | Recommended | Schema version. Use `1` for this document. |
 | `control_hub.root` | No | Absolute or home-relative external control-hub directory. Its `CONTROL.yml.workspace_hub` must resolve back to this hub. |
+| `memory` | No | Ordered local memory sources. Absence or `[]` preserves legacy user-level vault resolution. |
+| `memory[].name` | Yes, per entry | Unique identifier using letters, digits, `.`, `_`, and `-`. |
+| `memory[].type` | Yes, per entry | Memory transport. Version 1 supports only `local`. |
+| `memory[].path` | Yes, per entry | Absolute or `~/`-relative local path. |
+| `memory[0].skill` | Yes, when configured | Must be `knowledge-vault`; only the first entry is writable. |
+| `memory[0].config.vault` | Yes, when configured | Exact Obsidian vault name passed as `vault=`. |
 | `sources` | Yes | Map of stable, hub-local source catalog identifiers. |
 | `sources.<id>.root` | Yes | Absolute or home-relative directory containing source clones. |
 | `repositories.required` | Yes | Repositories that describe the hub's normal working context. May be empty. |
@@ -95,6 +112,66 @@ repositories:
 
 Keep names and roles portable. Organization-specific topology belongs in each hub's live
 `HUB.yml` and `SYSTEM_MAP.md`, not in the skill.
+
+## Workspace Memory
+
+`memory` is optional. When present and non-empty, it is an ordered stack with one managed primary
+followed by zero or more read-only sources:
+
+1. `memory[0]` must be `type: local`, declare `skill: knowledge-vault`, and provide a non-empty
+   `config.vault`. Agents use that skill and exact vault name for all persistence. `path` identifies
+   the same vault on disk for validation; never bypass the skill by editing it directly.
+2. Later entries must be `type: local` and omit both `skill` and `config`. Read them for context in
+   declaration order, following local instructions found there, but never create, edit, move, or
+   delete content in those paths as part of workspace memory capture.
+
+Before writing a new hub configuration, expand and normalize every memory path. Report a missing
+or unreadable local path as a warning. When Obsidian is already available, verify the primary with
+`obsidian vault="<vault>" vault info=path`; the reported path should resolve to
+`memory[0].path`. Validation is read-only and must not launch, create, or mutate a vault or
+secondary memory source. Show warnings plus the complete ordered memory stack and its
+writable/read-only roles in the confirmation preview. Unknown entry keys require user direction.
+
+The executable resolver intentionally accepts a canonical YAML subset so hook behavior does not
+depend on a third-party YAML package:
+
+- use spaces, the two-space list/four-space field/six-space config indentation shown above, and
+  one `key: value` field per line;
+- keys may appear in any order; plain, single-quoted, and double-quoted scalar strings and comments
+  are supported;
+- quote values that YAML could interpret as null, boolean, or numeric when they are intended as
+  strings;
+- `memory: []` is the only supported flow collection; anchors, aliases, tags, block scalars,
+  multiline scalars, and other flow collections are unsupported.
+
+The first pass of runtime discovery walks ancestors for `.coordination/REPOSITORIES.yml`; an
+active ticket resolves its parent hub and an archived ticket under `.archive/` resolves its
+grandparent hub. Only when no coordination root is found does a second ancestor walk select the
+nearest `HUB.yml`. This makes resolution work from the hub, ticket root, worktree, nested
+worktree directory, arbitrary hub subdirectory, and archived ticket while preventing a
+repository-local `HUB.yml` from hiding the workspace hub.
+
+An absent `memory` key or `memory: []` allows the user-level `knowledge-vault` configuration to
+resolve the vault as before; report `memory: []` as redundant during workspace inspection. A
+present but malformed or unsupported memory declaration fails closed: do not fall back to another
+vault, do not write through hooks, and report the validation error. There is no implicit promotion
+of a secondary source when the primary is invalid.
+
+At the start of planning, exploration, or implementation, search every valid local source in order
+by ticket key, topic, and named people. Use `knowledge-vault` for the primary when its prerequisites
+work and read later paths with read-only file tools. If the skill or Obsidian is unavailable, read
+the primary path with read-only tools and report degraded operation. A memory read problem never
+blocks the main task.
+
+At the end, identify decisions and context that will outlive the ticket and persist them only
+through the primary `knowledge-vault`. Keep ticket-specific state in `.coordination/`. If primary
+persistence is unavailable, report that it did not occur; never write directly under a configured
+path as a fallback.
+
+This protocol is guaranteed when an agent starts at the hub or ticket root. Claude Code also loads
+ancestor instructions from a worktree. OpenCode can stop at a worktree repository's own
+instructions, so worktree-started OpenCode sessions have partial coverage in version 1; automatic
+instruction injection there is intentionally deferred.
 
 ## Path Resolution
 

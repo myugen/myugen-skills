@@ -7,8 +7,10 @@ export const commands = Object.freeze({
     template: `Follow the multirepo-workspaces skill's Create a Hub workflow as the authoritative
 portable procedure. Treat $ARGUMENTS as an optional hub-name answer; ask for every missing or
 ambiguous value. Validate all source clones and destinations, show the complete hub layout and
-    repository inventory including optional per-repository CodeGraph policies, and obtain explicit
-    confirmation before writing. Create HUB.yml, SYSTEM_MAP.md, AGENTS.md, and CLAUDE.md under
+    repository inventory including optional per-repository CodeGraph policies, ask whether to
+    configure a primary knowledge-vault and read-only local memory sources, and obtain explicit
+    confirmation before writing. Show and validate any ordered memory roles. Create HUB.yml,
+    SYSTEM_MAP.md, AGENTS.md, and CLAUDE.md under
     ~/dev/workspaces/<hub>, never a Git repository. Do not overwrite, fetch, clone, or alter a
     source checkout.`,
   }),

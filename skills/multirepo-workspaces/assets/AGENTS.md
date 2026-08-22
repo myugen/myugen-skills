@@ -3,6 +3,18 @@
 Before working, read and follow `.coordination/AGENTS.md`, then read
 `.coordination/REPOSITORIES.yml`, `.coordination/PLAN.md`, and the parent hub's `AGENTS.md`.
 
+Search the parent `HUB.yml` memory stack by ticket, topic, and named people before planning when
+one is declared. Use only its primary through `knowledge-vault` for persistence; later local memory
+paths are read-only context. If the skill is unavailable, search the primary path read-only and
+report degraded operation without blocking the task. At the end, persist durable outcomes only
+through the primary, or report that persistence did not occur. Never write directly to a declared
+path or fall back to a secondary source.
+
+This protocol is guaranteed when the agent starts at the hub or ticket root. Claude Code also
+loads these ancestor instructions when started in a worktree. OpenCode may stop at that
+repository's own instructions, so a worktree-started OpenCode session has partial coverage in
+version 1.
+
 Treat this ticket directory as a coordination root, not as a Git repository. Each listed child
 directory is an independent Git worktree with its own branch, history, tests, and repository
 instructions.

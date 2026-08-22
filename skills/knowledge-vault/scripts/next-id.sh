@@ -13,7 +13,7 @@
 #   skills/knowledge-vault/scripts/next-id.sh SESS
 #   -> SESS-0008
 #
-# Resolves the vault the same way resolve-vault.sh does ($OBSIDIAN_VAULT env var, or
+# Resolves the vault the same way resolve-vault.sh does ($OBSIDIAN_VAULT, workspace memory, then
 # ~/.config/knowledge-vault/config.json). Requires the `obsidian` CLI to be reachable
 # (Obsidian running) since it uses `obsidian vault info=path` to find the selected vault's
 # filesystem path.

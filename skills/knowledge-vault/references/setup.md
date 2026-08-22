@@ -30,16 +30,19 @@ obsidian vaults verbose
   and every `vault=` parameter. No plugin or API key is required; the CLI talks to the app
   directly.
 
-## 4. Create the config file
+## 4. Create the fallback config file
 
-This skill resolves which vault to use from a small JSON file kept **outside any project
-repo**, so nothing about vault selection ever gets committed to code you work on:
+Outside a workspace with configured memory, this skill resolves which vault to use from a small
+JSON file kept **outside any project repo**:
 
 ```
 ${XDG_CONFIG_HOME:-$HOME/.config}/knowledge-vault/config.json
 ```
 
-Create the directory and copy the example shipped with this skill:
+This file is optional when every relevant workspace declares a valid primary `knowledge-vault` in
+its `HUB.yml`. That workspace schema and its canonical YAML subset are documented in
+`../../multirepo-workspaces/references/hub-schema.md`. Create the fallback file when you need a
+default or per-directory mapping:
 
 ```sh
 mkdir -p "${XDG_CONFIG_HOME:-$HOME/.config}/knowledge-vault"
@@ -72,7 +75,8 @@ Then edit it:
   manual use of the skill itself.
 
 See `references/cli-usage.md` for exactly how this file is read at the start of every vault
-operation.
+operation. Workspace memory takes precedence. A malformed explicit workspace declaration blocks
+the fallback so a write cannot silently land in the wrong vault.
 
 ## 5. Install the note templates
 
@@ -99,5 +103,6 @@ obsidian vault="$(bash scripts/resolve-vault.sh)" vault info=path  # prints its 
 obsidian vault="$(bash scripts/resolve-vault.sh)" search query="test"
 ```
 
-If `resolve-vault.sh` exits non-zero, re-check step 4 (the config file). If `vault info=name`
-fails or returns the wrong vault, re-check the exact name against `obsidian vaults verbose`.
+If `resolve-vault.sh` exits non-zero, follow its diagnostic: repair the explicit workspace memory
+when one is declared, or re-check step 4 when using the fallback. If `vault info=name` fails or
+returns the wrong vault, re-check the exact name against `obsidian vaults verbose`.

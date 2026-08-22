@@ -14,9 +14,10 @@ ambiguous value.
    when no usable hub name was supplied.
 2. Collect the hub purpose, source catalog roots, repository inventory, required/optional
    classification, role, criticality, optional per-repository `codegraph: true` policy, system
-   context, and branch convention.
+   context, and branch convention. Ask whether to configure optional workspace memory; if so,
+   collect the primary `knowledge-vault` path and vault name plus any read-only local sources.
 3. Validate every proposed source clone and destination before writing anything. Show the complete
-   hub layout and repository inventory, then obtain explicit confirmation.
+   hub layout, repository inventory, and ordered memory roles, then obtain explicit confirmation.
 4. Create the hub only after confirmation. It must contain `HUB.yml`, `SYSTEM_MAP.md`,
    `AGENTS.md`, and `CLAUDE.md`, but never a Git repository.
 5. Report the created files and any safely resumable partial state. Do not overwrite, fetch,
