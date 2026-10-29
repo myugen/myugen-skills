@@ -1,14 +1,6 @@
 {
   "skills": [
     {
-      "name": "conventional-commits",
-      "version": "sha256:0ee23572631628205072893405ba5dab6837b5001332932129c6e00ced8b290e",
-      "files": [
-        "SKILL.md",
-        "references/conventional-commits.md"
-      ]
-    },
-    {
       "name": "knowledge-vault",
       "version": "sha256:59f9793a83b9b6ff82d3a460b9d3597cd58fb917796a2c84b2d2b48f62365962",
       "files": [

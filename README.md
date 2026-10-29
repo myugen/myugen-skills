@@ -17,7 +17,6 @@ Code users can install every skill in one step instead of symlinking each one by
 
 | Skill | What it does |
 |-------|--------------|
-| [`conventional-commits`](./skills/conventional-commits) | Create focused, safe Git commits using the Conventional Commits 1.0.0 format, including change review, explicit staging, message composition, and post-commit verification. |
 | [`knowledge-vault`](./skills/knowledge-vault) | Manage an Obsidian vault (via the `obsidian` CLI) as shared long-term memory for agents and humans — plans, decisions, session notes, and foundational knowledge about people, teams, and projects. |
 | [`multirepo-workspaces`](./skills/multirepo-workspaces) | Initialize project hubs and safely manage ticket-scoped Git worktree workspaces across multiple repositories, using hub metadata and coordination artifacts without converting source clones into a monorepo. |
 | [`workspace-control-hub`](./skills/workspace-control-hub) | Create and query an external, per-vertical control hub that connects epics, parallel ticket workspaces, dependencies, readiness, and delivery evidence without replacing their authoritative systems. |
