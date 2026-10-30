@@ -97,6 +97,26 @@ test("workspace memory precedence is explicit override, hub, repository prefix, 
   assert.equal(runResolver(worktree, home).stdout.trim(), "default-vault")
 })
 
+test("workspace-required resolution rejects inherited and configured fallbacks without changing manual resolution", async () => {
+  const { home, hub, worktree } = await fixture()
+  await writeConfig(home, { defaultVault: "global-vault", repositories: { [worktree]: "mapped-vault" } })
+  const env = environment(home, { OBSIDIAN_VAULT: "inherited-vault" })
+  const required = () => spawnSync("bash", [resolver, "--workspace-required"], { cwd: worktree, env, encoding: "utf8" })
+  await writeHub(hub, "declared-vault")
+  let result = required()
+  assert.equal(result.status, 0, result.stderr)
+  assert.equal(result.stdout.trim(), "declared-vault")
+  for (const text of ["version: 1\n", "memory: []\n"]) {
+    await writeFile(join(hub, "HUB.yml"), text)
+    result = required()
+    assert.notEqual(result.status, 0)
+    assert.equal(result.stdout, "")
+    assert.match(result.stderr, /no workspace knowledge-vault declared/)
+    assert.equal(runResolver(worktree, home, { OBSIDIAN_VAULT: "inherited-vault" }).stdout.trim(), "inherited-vault")
+    assert.equal(runResolver(worktree, home, { OBSIDIAN_VAULT: "" }).stdout.trim(), "mapped-vault")
+  }
+})
+
 test("canonical reader supports key order, quotes, and comments", async () => {
   const { home, hub } = await fixture()
   await writeFile(
@@ -226,6 +246,17 @@ async function dirtyRepository(worktree) {
   await writeFile(join(worktree, "change.txt"), "change\n")
 }
 
+async function editedTurn(root) {
+  const path = join(root, "transcript.jsonl")
+  const entries = [
+    { type: "user", message: { content: "Edit a file" } },
+    { type: "assistant", message: { content: [{ type: "tool_use", id: "edit-1", name: "Edit", input: {} }] } },
+    { type: "user", message: { content: [{ type: "tool_result", tool_use_id: "edit-1", content: "success" }] } },
+  ]
+  await writeFile(path, entries.map(JSON.stringify).join("\n") + "\n")
+  return path
+}
+
 test("Claude hooks do not nudge or write when explicit workspace memory is malformed", async () => {
   const { root, home, hub, worktree } = await fixture()
   const bin = join(root, "bin")
@@ -311,12 +342,12 @@ esac`,
   const result = spawnSync("bash", [stopHook], {
     cwd: worktree,
     env,
-    input: JSON.stringify({ cwd: worktree, stop_hook_active: false }),
+    input: JSON.stringify({ cwd: worktree, transcript_path: await editedTurn(root), stop_hook_active: false }),
     encoding: "utf8",
   })
 
   assert.equal(result.status, 0, result.stderr)
-  assert.equal(JSON.parse(result.stdout).decision, "block")
+  assert.match(JSON.parse(result.stdout).hookSpecificOutput.additionalContext, /Before finishing/)
 
   const end = spawnSync("bash", [endHook], {
     cwd: worktree,
@@ -328,7 +359,7 @@ esac`,
   assert.match(await readFile(obsidianLog, "utf8"), /vault=fever create/)
 })
 
-test("existing hub without memory retains legacy hook resolution", async () => {
+test("existing hub without memory does not activate hooks through a fallback vault", async () => {
   const { root, home, hub, worktree } = await fixture()
   const bin = join(root, "bin")
   await mkdir(bin)
@@ -340,12 +371,12 @@ test("existing hub without memory retains legacy hook resolution", async () => {
   const result = spawnSync("bash", [stopHook], {
     cwd: worktree,
     env: environment(home, { PATH: `${bin}:/usr/bin:/bin:/usr/sbin:/sbin:${process.env.PATH}` }),
-    input: JSON.stringify({ cwd: worktree, stop_hook_active: false }),
+    input: JSON.stringify({ cwd: worktree, transcript_path: await editedTurn(root), stop_hook_active: false }),
     encoding: "utf8",
   })
 
   assert.equal(result.status, 0, result.stderr)
-  assert.equal(JSON.parse(result.stdout).decision, "block")
+  assert.equal(result.stdout, "")
 })
 
 test("generated workspace instructions include memory read, degraded, write, and entry-point rules", async () => {

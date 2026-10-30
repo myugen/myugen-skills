@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Resolve the writable knowledge-vault memory declared by the current workspace."""
 
+import argparse
 import json
 import os
 import re
@@ -25,17 +26,25 @@ def ancestors(path):
         current = current.parent
 
 
+def discover_ticket(start):
+    return next(
+        (directory for directory in ancestors(start)
+         if (directory / ".coordination" / "REPOSITORIES.yml").is_file()),
+        None,
+    )
+
+
 def discover_hub(start):
     # Coordination metadata wins so a repository-local HUB.yml cannot hide the workspace hub.
-    for directory in ancestors(start):
-        if (directory / ".coordination" / "REPOSITORIES.yml").is_file():
-            if directory.parent.name == ".archive":
-                candidate = directory.parent.parent / "HUB.yml"
-            else:
-                candidate = directory.parent / "HUB.yml"
-            if not candidate.is_file() or not os.access(candidate, os.R_OK):
-                return None, f"ticket marker resolves to missing or unreadable {candidate}"
-            return candidate, None
+    ticket = discover_ticket(start)
+    if ticket:
+        if ticket.parent.name == ".archive":
+            candidate = ticket.parent.parent / "HUB.yml"
+        else:
+            candidate = ticket.parent / "HUB.yml"
+        if not candidate.is_file() or not os.access(candidate, os.R_OK):
+            return None, f"ticket marker resolves to missing or unreadable {candidate}"
+        return candidate, None
 
     for directory in ancestors(start):
         candidate = directory / "HUB.yml"
@@ -292,12 +301,64 @@ def validate(entries):
             raise MemoryError(f"{label} must be skill-less and read-only")
 
 
-def resolve(start):
+def ticket_metadata(ticket):
+    """Read only ticket/control fields from the generated canonical coordination format."""
+    result = {}
+    control = None
+    in_control = False
+    document = ticket / ".coordination" / "REPOSITORIES.yml"
+    for raw in document.read_text(encoding="utf-8").splitlines():
+        content = strip_comment(raw).strip()
+        if not content:
+            continue
+        if not raw[:1].isspace():
+            in_control = False
+            if content.startswith("ticket:"):
+                if "ticket" in result:
+                    raise MemoryError("ticket is declared more than once")
+                result["ticket"] = scalar(content.partition(":")[2], "ticket")
+            elif content.startswith("control:"):
+                if control is not None:
+                    raise MemoryError("control is declared more than once")
+                value = content.partition(":")[2].strip()
+                if value not in ("", "{}"):
+                    raise MemoryError("control must use the canonical mapping form")
+                control = {}
+                in_control = value == ""
+            continue
+        if in_control:
+            if "\t" in raw or len(raw) - len(raw.lstrip(" ")) != 2:
+                raise MemoryError("control must use two-space-indented scalar fields")
+            key, value = key_value(content, "control")
+            if key not in {"epic", "epic_record"} or key in control:
+                raise MemoryError("unsupported or duplicate control field")
+            control[key] = value
+    if control:
+        if set(control) != {"epic", "epic_record"}:
+            raise MemoryError("control.epic and control.epic_record must be declared together")
+        record = control["epic_record"]
+        if not (record.startswith("~/") or os.path.isabs(record)):
+            raise MemoryError("control.epic_record must be absolute or start with ~/")
+        result["control"] = control
+    return result
+
+
+def resolve(start, include_context=False):
     hub, discovery_error = discover_hub(start)
     if discovery_error:
         return {"status": "malformed", "message": discovery_error}
     if hub is None:
         return {"status": "absent"}
+    context = {}
+    if include_context:
+        context["hub"] = str(hub)
+        ticket = discover_ticket(start)
+        if ticket:
+            context["ticket_root"] = str(ticket)
+            try:
+                context.update(ticket_metadata(ticket))
+            except (MemoryError, OSError, UnicodeError) as error:
+                context["metadata_error"] = str(error)
     try:
         text = hub.read_text(encoding="utf-8")
     except (OSError, UnicodeError) as error:
@@ -306,22 +367,26 @@ def resolve(start):
     try:
         lines = memory_lines(text)
         if lines is None or lines == []:
-            return {"status": "absent"}
+            return {"status": "absent", **context}
         entries = parse_entries(lines)
         validate(entries)
     except MemoryError as error:
         return {"status": "malformed", "message": f"{hub}: {error}"}
 
     primary = entries[0]
-    return {"status": "valid", "vault": primary["config"]["vault"], "path": primary["path"]}
+    result = {"status": "valid", "vault": primary["config"]["vault"], "path": primary["path"]}
+    if include_context:
+        result.update(context, entries=entries)
+    return result
 
 
 def main():
-    if len(sys.argv) > 2:
-        print("usage: resolve-workspace-memory.py [START_DIRECTORY]", file=sys.stderr)
-        return 2
-    start = Path(sys.argv[1] if len(sys.argv) == 2 else os.getcwd()).expanduser().resolve()
-    print(json.dumps(resolve(start), separators=(",", ":")))
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--context", action="store_true", help="include hub, ticket, control, and read-only memory entries")
+    parser.add_argument("start", nargs="?", default=os.getcwd())
+    args = parser.parse_args()
+    start = Path(args.start).expanduser().resolve()
+    print(json.dumps(resolve(start, include_context=args.context), separators=(",", ":")))
     return 0
 
 

@@ -10,7 +10,7 @@
       "name": "myugen-skills",
       "source": ".",
       "description": "Personal skills for organizational knowledge, safe Git commits, and multirepository workspaces.",
-      "version": "1.10.0"
+      "version": "1.11.0"
     }
   ]
 }

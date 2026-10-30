@@ -83,6 +83,18 @@ the CLI default.
 The fallback config's full shape is documented in `references/setup.md`; the workspace schema and
 canonical YAML subset are documented in `../../multirepo-workspaces/references/hub-schema.md`.
 
+For read-only discovery adapters, `scripts/resolve-workspace-memory.py --context [directory]`
+adds the discovered `hub` file, `ticket_root`, canonical `ticket`/`control` fields, and validated
+`entries` to its JSON result. Its default output stays unchanged. Invalid ticket/control metadata
+produces `metadata_error` without guessing identifiers or epic paths; malformed memory still
+fails closed. This is metadata discovery, not a full YAML parser or permission to write paths.
+
+Automatic lifecycle adapters use `scripts/resolve-vault.sh --workspace-required`: only an explicit
+valid primary in `HUB.yml` can select a vault. Missing/empty memory fails rather than consulting
+the environment or user config. The default manual resolution above is unchanged;
+`--workspace-owned` still gives declared workspace memory priority while retaining legacy
+fallback when memory is absent.
+
 Every example below assumes you've already run `VAULT=$(bash scripts/resolve-vault.sh)` and carries
 `vault="$VAULT"` accordingly — that's not optional decoration, it's the fix for the default
 described above.

@@ -142,19 +142,25 @@ npx skills add humanlayer/skills --skill show-me --global --agent opencode claud
 The workspace doctor only inspects local skill files and lock metadata. It reports readiness and
 prints the appropriate install command when needed; it never installs the skill itself.
 
-## Automatic capture (Claude Code)
+## Automatic memory recall and capture (Claude Code)
 
-Skills are model-invoked — Claude decides whether to use one, which means during heads-down
-work it often just... doesn't, and nothing lands in the vault. Installing this repo as a
-Claude Code plugin also installs `hooks/` — a **Claude-only layer** that fires deterministically
-on session lifecycle events (not model discretion) to close that gap:
+Skills are model-invoked — an agent can forget to consult existing knowledge or capture new
+decisions. Installing this repo as a Claude Code plugin also installs `hooks/`, a
+**Claude-only layer** that performs bounded discovery and supplies lifecycle guidance:
 
-- A factual session note (repo, branch, commits, duration) is **always** written when a
-  session ends, regardless of what the model did.
-- Claude is reminded at session start which vault this session is linked to, and nudged once
-  before ending a turn with uncommitted changes to persist any decisions/plans.
+Automatic Obsidian access requires a valid `knowledge-vault` primary explicitly declared in the
+workspace's `HUB.yml`. An inherited vault or global fallback config alone does not enable it;
+manual skill use is unchanged. Declared control-hub references remain available without memory.
 
-See [`hooks/README.md`](./hooks/README.md) for exactly what's deterministic vs. model-authored,
+- Session start, resume, compaction, and clear inject matching memory paths and declared epic
+  records. Each prompt searches new ticket/epic identifiers with a session-local cache.
+- Successful edit/commit activity prompts one capture step, including at non-Git ticket roots;
+  old uncommitted files alone do not trigger it.
+- Eligible sessions write a factual session note when the primary vault and running Obsidian are
+  available. This is best-effort metadata logging, not an automatic summary of decisions.
+
+The model must still read relevant notes, search by topic/person, and author meaningful updates.
+See [`hooks/README.md`](./hooks/README.md) for limits, cache behavior, and what's model-authored,
 and how to disable it (`autoSession: false` in the vault config). The `knowledge-vault` skill
 itself stays fully agent-agnostic — the hooks are additive, Claude-specific plumbing on top.
 

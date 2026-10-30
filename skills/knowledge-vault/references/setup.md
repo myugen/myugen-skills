@@ -69,10 +69,14 @@ Then edit it:
   be a repo root or any ancestor directory. When more than one key matches, the longest
   (most specific) one wins.
 - `autoSession` (optional, default `true`) — kill-switch for the Claude Code plugin's automatic
-  hooks (session-start context, the stop-time capture nudge, and the auto-written session
-  note). Set to `false` to disable all three without deleting this file. Only relevant if
-  you're using the plugin's hooks — see `hooks/README.md` at the repo root; it doesn't affect
-  manual use of the skill itself.
+  hooks (session-start and per-prompt memory recall, the activity-based capture nudge, and the
+  auto-written session note). Set to `false` to disable all four without deleting this file.
+  Only relevant if you're using the plugin's hooks — see `hooks/README.md` at the repo root;
+  it doesn't affect manual use of the skill itself.
+
+Global vault defaults and repository mappings are for manual skill use. Automatic hooks access
+Obsidian only when the enclosing `HUB.yml` explicitly declares a valid `knowledge-vault` primary;
+an inherited `OBSIDIAN_VAULT` or this config alone does not enable recall or session capture.
 
 See `references/cli-usage.md` for exactly how this file is read at the start of every vault
 operation. Workspace memory takes precedence. A malformed explicit workspace declaration blocks

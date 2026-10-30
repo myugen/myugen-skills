@@ -34,6 +34,13 @@ TRANSCRIPT_PATH="$(read_field transcript_path)"
 CWD="$(read_field cwd)"
 [ -n "$CWD" ] || CWD="$(pwd)"
 
+cleanup_state() {
+  if [ -n "${CLAUDE_PLUGIN_DATA:-}" ] && [[ "$SESSION_ID" =~ ^[A-Za-z0-9_-]{1,160}$ ]]; then
+    rm -f "$CLAUDE_PLUGIN_DATA/sessions/$SESSION_ID.json" 2>/dev/null
+  fi
+}
+trap cleanup_state EXIT
+
 # Respect the autoSession kill-switch.
 CONFIG_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/knowledge-vault/config.json"
 if [ -f "$CONFIG_FILE" ]; then
@@ -47,21 +54,34 @@ except Exception:
   fi
 fi
 
+# Automatic persistence requires an explicit HUB.yml primary. Environment overrides and
+# user-level fallback vaults remain available only for manual skill use.
+VAULT="$(cd "$CWD" 2>/dev/null && "$KV_SCRIPTS/resolve-vault.sh" --workspace-required 2>/dev/null)"
+[ -z "$VAULT" ] && exit 0
+
 # Never launch Obsidian just to log — if it's not already running, skip silently.
 pgrep -x Obsidian >/dev/null 2>&1 || exit 0
 
-# Fail-closed workspace resolution prevents an automatic note from landing in a secondary or
-# user-level fallback vault when explicit workspace memory is unusable.
-VAULT="$(cd "$CWD" 2>/dev/null && "$KV_SCRIPTS/resolve-vault.sh" --workspace-owned 2>/dev/null)"
-[ -z "$VAULT" ] && exit 0
-
-if ! (cd "$CWD" 2>/dev/null && git rev-parse --is-inside-work-tree >/dev/null 2>&1); then
-  exit 0
+WORKSPACE_ROOT=""
+TICKET_ROOT=""
+IS_GIT_REPO=0
+if (cd "$CWD" 2>/dev/null && git rev-parse --is-inside-work-tree >/dev/null 2>&1); then
+  IS_GIT_REPO=1
+  REPO_NAME="$(cd "$CWD" && basename "$(git rev-parse --show-toplevel)")"
+  BRANCH="$(cd "$CWD" && git rev-parse --abbrev-ref HEAD 2>/dev/null)"
+  END_HEAD="$(cd "$CWD" && git rev-parse HEAD 2>/dev/null)"
+else
+  # Coordination roots are intentionally not repositories. Use declared workspace metadata,
+  # never initialize Git or infer aggregate commit counts across child worktrees.
+  MEMORY_JSON="$(python3 "$KV_SCRIPTS/resolve-workspace-memory.py" --context "$CWD" 2>/dev/null)"
+  WORKSPACE_ROOT="$(printf '%s' "$MEMORY_JSON" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("hub", ""))' 2>/dev/null)"
+  TICKET_ROOT="$(printf '%s' "$MEMORY_JSON" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("ticket_root", ""))' 2>/dev/null)"
+  [ -n "$WORKSPACE_ROOT" ] || exit 0
+  COORDINATION_ROOT="${TICKET_ROOT:-$(dirname "$WORKSPACE_ROOT")}"
+  REPO_NAME="$(basename "$COORDINATION_ROOT")"
+  BRANCH="not-applicable (coordination workspace)"
+  END_HEAD=""
 fi
-
-REPO_NAME="$(cd "$CWD" && basename "$(git rev-parse --show-toplevel)")"
-BRANCH="$(cd "$CWD" && git rev-parse --abbrev-ref HEAD 2>/dev/null)"
-END_HEAD="$(cd "$CWD" && git rev-parse HEAD 2>/dev/null)"
 TODAY="$(date -u +%Y-%m-%d)"
 
 # Load start-of-session state, if session-start.sh stashed one.
@@ -69,19 +89,21 @@ STARTED_AT=""
 START_HEAD=""
 if [ -n "${CLAUDE_PLUGIN_DATA:-}" ] && [ -n "$SESSION_ID" ]; then
   STATE_FILE="$CLAUDE_PLUGIN_DATA/sessions/$SESSION_ID.json"
-  if [ -f "$STATE_FILE" ]; then
+  if [[ "$SESSION_ID" =~ ^[A-Za-z0-9_-]{1,160}$ ]] && [ -f "$STATE_FILE" ]; then
     STARTED_AT="$(python3 -c "import json,sys; print(json.load(open(sys.argv[1])).get('startedAt',''))" "$STATE_FILE" 2>/dev/null)"
     START_HEAD="$(python3 -c "import json,sys; print(json.load(open(sys.argv[1])).get('startHead',''))" "$STATE_FILE" 2>/dev/null)"
   fi
 fi
 
-COMMIT_COUNT=0
-if [ -n "$START_HEAD" ] && [ -n "$END_HEAD" ] && [ "$START_HEAD" != "$END_HEAD" ]; then
+COMMIT_COUNT="not-applicable"
+[ "$IS_GIT_REPO" = "1" ] && COMMIT_COUNT=0
+if [ "$IS_GIT_REPO" = "1" ] && [ -n "$START_HEAD" ] && [ -n "$END_HEAD" ] && [ "$START_HEAD" != "$END_HEAD" ]; then
   COMMIT_COUNT="$(cd "$CWD" && git rev-list --count "$START_HEAD..$END_HEAD" 2>/dev/null || echo 0)"
 fi
 
-CHANGED_FILES=0
-if [ -n "$START_HEAD" ]; then
+CHANGED_FILES="not-applicable"
+[ "$IS_GIT_REPO" = "1" ] && CHANGED_FILES=0
+if [ "$IS_GIT_REPO" = "1" ] && [ -n "$START_HEAD" ] && [ -n "$END_HEAD" ]; then
   CHANGED_FILES="$(cd "$CWD" && git diff --name-only "$START_HEAD" "$END_HEAD" 2>/dev/null | wc -l | tr -d ' ')"
 fi
 
@@ -100,7 +122,13 @@ try:
                 entry = json.loads(line)
             except Exception:
                 continue
-            if entry.get('type') == 'user':
+            if not isinstance(entry, dict) or entry.get('type') != 'user':
+                continue
+            message = entry.get('message', {})
+            content = message.get('content', []) if isinstance(message, dict) else []
+            if isinstance(content, str) or (isinstance(content, list) and any(
+                isinstance(block, dict) and block.get('type') == 'text' for block in content
+            )):
                 count += 1
 except Exception:
     pass
@@ -111,12 +139,6 @@ PYEOF
 fi
 
 ENDED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-
-cleanup_state() {
-  if [ -n "${CLAUDE_PLUGIN_DATA:-}" ] && [ -n "$SESSION_ID" ]; then
-    rm -f "$CLAUDE_PLUGIN_DATA/sessions/$SESSION_ID.json" 2>/dev/null
-  fi
-}
 
 # Idempotency guard: if a SESS- note already records this exact session_id (e.g. SessionEnd
 # fired more than once for the same session), don't write a second one — just refresh its
@@ -135,7 +157,6 @@ except Exception:
 " "$SEARCH_OUT" 2>/dev/null)"
   if [ -n "$EXISTING_PATH" ]; then
     obsidian vault="$VAULT" property:set name="updated" value="$TODAY" type=date path="$EXISTING_PATH" >/dev/null 2>&1
-    cleanup_state
     exit 0
   fi
 fi
@@ -180,7 +201,13 @@ BODY="## What happened
 
 Recorded automatically by the knowledge-vault plugin hooks (metadata only — no prompt/response content)."
 
+if [ -n "$WORKSPACE_ROOT" ]; then
+  BODY="$BODY
+
+- workspace hub: $WORKSPACE_ROOT
+- ticket workspace: ${TICKET_ROOT:-not-applicable}"
+fi
+
 obsidian vault="$VAULT" append path="$ACTUAL_PATH" content="$BODY" >/dev/null 2>&1
 
-cleanup_state
 exit 0

@@ -14,7 +14,8 @@
 # Usage:
 #   VAULT=$(scripts/resolve-vault.sh)
 #   obsidian vault="$VAULT" search query="test"
-#   scripts/resolve-vault.sh --workspace-owned  # lifecycle hooks: explicit workspace owns writes
+#   scripts/resolve-vault.sh --workspace-owned  # explicit workspace owns writes; otherwise legacy fallback
+#   scripts/resolve-vault.sh --workspace-required  # automatic hooks: HUB.yml declaration required
 
 set -euo pipefail
 
@@ -23,11 +24,13 @@ CONFIG_FILE="$CONFIG_DIR/config.json"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 WORKSPACE_OWNED=0
+WORKSPACE_REQUIRED=0
 case "${1:-}" in
   "") ;;
   --workspace-owned) WORKSPACE_OWNED=1 ;;
+  --workspace-required) WORKSPACE_OWNED=1; WORKSPACE_REQUIRED=1 ;;
   *)
-    echo "usage: resolve-vault.sh [--workspace-owned]" >&2
+    echo "usage: resolve-vault.sh [--workspace-owned|--workspace-required]" >&2
     exit 2
     ;;
 esac
@@ -60,6 +63,10 @@ case "$MEMORY_STATUS" in
     exit 1
     ;;
   absent)
+    if [ "$WORKSPACE_REQUIRED" = "1" ]; then
+      echo "error: no workspace knowledge-vault declared in HUB.yml" >&2
+      exit 1
+    fi
     ;;
   *)
     echo "error: workspace memory resolver returned unknown status '$MEMORY_STATUS'" >&2
@@ -67,7 +74,7 @@ case "$MEMORY_STATUS" in
     ;;
 esac
 
-# Hooks preserve legacy override behavior only when the workspace has not declared memory.
+# Ownership mode preserves legacy overrides when memory is absent; required mode already exited.
 if [ -n "${OBSIDIAN_VAULT:-}" ]; then
   printf '%s\n' "$OBSIDIAN_VAULT"
   exit 0

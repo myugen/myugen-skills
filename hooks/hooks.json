@@ -2,20 +2,23 @@
   "hooks": {
     "SessionStart": [
       {
-        "matcher": "startup",
+        "matcher": "startup|resume|compact|clear",
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/scripts/session-start.sh"
+            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/scripts/session-start.sh",
+            "timeout": 5
           }
         ]
-      },
+      }
+    ],
+    "UserPromptSubmit": [
       {
-        "matcher": "resume",
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/scripts/session-start.sh"
+            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/scripts/prompt-memory.sh",
+            "timeout": 5
           }
         ]
       }
@@ -25,7 +28,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/scripts/session-stop.sh"
+            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/scripts/session-stop.sh",
+            "timeout": 5
           }
         ]
       }
@@ -35,7 +39,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/scripts/session-end.sh"
+            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/scripts/session-end.sh",
+            "timeout": 15
           }
         ]
       }

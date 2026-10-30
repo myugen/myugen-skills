@@ -2,6 +2,24 @@
 
 All notable changes to this project are documented in this file.
 
+## [1.11.0] - 2026-10-30
+
+### Added
+
+- Added bounded Claude Code memory recall on session start and each prompt, with explicit
+  ticket/epic searches, read-only secondary sources, degraded file fallback, and session caching.
+- Added declared epic-record paths to recalled context and restored memory context after
+  compaction and clear without resetting initial session metrics.
+
+### Changed
+
+- Replaced dirty-working-tree capture nudges with successful turn-activity signals and normal
+  Stop-hook feedback, supporting coordination roots and their repository worktrees.
+- Required explicitly declared `HUB.yml` memory for automatic Obsidian access; environment and
+  global config vault fallbacks remain available for manual skill use only.
+- Extended metadata-only session logging to non-Git hub/ticket roots without inventing Git metrics.
+- Distinguished automatic path discovery from agent-authored consultation and persistence.
+
 ## [1.10.0] - 2026-08-23
 
 ### Added

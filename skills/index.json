@@ -2,7 +2,7 @@
   "skills": [
     {
       "name": "knowledge-vault",
-      "version": "sha256:59f9793a83b9b6ff82d3a460b9d3597cd58fb917796a2c84b2d2b48f62365962",
+      "version": "sha256:5cd6eed23fe26c929fe4807bbd2e1cfe73d6951f3dcf02448ae3b8416120d7ad",
       "files": [
         "SKILL.md",
         "assets/config.example.json",

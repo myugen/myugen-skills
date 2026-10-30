@@ -76,6 +76,18 @@ Full mechanics for assigning and linking IDs (numbering and zero-padding) are in
 
 ## Core workflows
 
+### Consult existing context before planning
+
+Before planning or exploring a task, search by its ticket, linked epic, topic, and named people
+rather than deriving organizational context from scratch. Read the relevant matches before
+drawing conclusions. Paths supplied by a runtime's automatic recall are a starting point, not
+proof that memory has been consulted or that identifier searches found everything.
+
+Keep reading separate from persistence: a search never implies a write. Consult later declared
+local memories read-only, and use the primary's declared path only as a read-only fallback when
+managed access is unavailable. Report degraded operation without blocking the main task. At the
+end, persist only genuinely durable outcomes through the managed primary, not every tool action.
+
 ### 1. Search before you write
 
 **This applies to every note type you create yourself — Person, Team, Project, Foundation,
@@ -126,11 +138,15 @@ below.**
 
 ### 4. Session notes are automatic — don't create them yourself
 
-When the Claude hooks are installed, automatic capture is enabled, and this skill resolves a valid
-writable vault, the `SessionEnd` hook writes one factual `SESS-NNNN` note (repo, branch, commits,
+When the Claude hooks are installed, automatic capture is enabled, and the enclosing `HUB.yml`
+explicitly declares a valid writable `knowledge-vault` primary, the `SessionEnd` hook writes one
+factual `SESS-NNNN` note (repo, branch, commits,
 files changed, duration, `session_id`) regardless of what happened during the session. Because of
 this, **you should never create a Session note yourself** — doing so can produce a second note for
 the same session instead of one.
+
+Resolving a vault manually from the environment or user-level config does not enable automatic
+capture outside a memory-declared workspace.
 
 If something from the session is worth adding beyond that automatic metadata (a summary, a
 noteworthy tangent), don't create a new Session note — find the one this session already wrote
@@ -213,7 +229,8 @@ its `updated` property to today. `created` is set once and never changes.
 - `scripts/resolve-vault.sh` — prints the vault name to use for the current working directory,
   applying explicit override, workspace memory, and user-level fallback precedence.
 - `scripts/resolve-workspace-memory.py` — stdlib-only canonical reader used by the resolver and
-  hooks; it reports workspace memory as `absent`, `valid`, or `malformed` JSON.
+  adapters; it reports workspace memory as `absent`, `valid`, or `malformed` JSON. Optional
+  `--context` includes hub/ticket/control metadata and the validated read-only memory stack.
 - `scripts/append-file.sh` — appends a content file to an exact note path without hand-escaping
   multiline text.
 - `scripts/run-with-timeout.sh` — bounds an external CLI invocation on macOS and Linux.
