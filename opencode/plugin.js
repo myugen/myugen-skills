@@ -12,7 +12,9 @@ portable procedure. Treat $ARGUMENTS as an optional hub-name answer; ask for eve
 ambiguous value. Validate all source clones and destinations, show the complete hub layout and
     repository inventory including optional per-repository CodeGraph policies, ask whether to
     configure a primary knowledge-vault and read-only local memory sources, and obtain explicit
-    confirmation before writing. Show and validate any ordered memory roles. Create HUB.yml,
+    confirmation before writing. Show and validate any ordered memory roles. Ask about optional
+    skill defaults with name, local path, and contextual when criteria; validate real skill folders
+    and default to an empty selection. Never install skills globally. Create HUB.yml,
     SYSTEM_MAP.md, AGENTS.md, and CLAUDE.md under
     ~/dev/workspaces/<hub>, never a Git repository. Do not overwrite, fetch, clone, or alter a
     source checkout.`,
@@ -26,7 +28,11 @@ which registered repositories are involved. Validate local refs, branches, sourc
     destinations. For repositories configured with codegraph: true, verify the CodeGraph CLI before
     the first write; record the effective policy before initializing and verifying that worktree's
     local index. Stop and report resumable partial state if initialization fails. Never fetch, pull,
-    push, reset, clean, force, overwrite existing workspace content, or mutate source checkouts.`,
+    push, reset, clean, force, overwrite existing workspace content, or mutate source checkouts.
+    For a new workspace, validate and preview hub skill defaults before writing, then initialize
+    its independent skill snapshot and full local copies at the ticket root before worktrees.
+    Existing snapshots never inherit later hub changes. Stop on failed setup; never install
+    skills globally or copy them into repositories.`,
   }),
   "workspace-archive": Object.freeze({
     description: "Interactively archive a ticket workspace while preserving branches and metadata",
@@ -41,8 +47,34 @@ worktrees to remove, retained branches, and the archive destination, then obtain
     <worktree> --force, verify clean worktrees, then remove linked worktrees without force and
     preserve their branches. Move the verified ticket coordination root to <hub>/.archive/<ticket>
     only after every removal succeeds. Never fetch, pull, push, reset, clean, force, overwrite,
-    delete branches, or mutate source checkouts.`,
-    }),
+    delete branches, or mutate source checkouts. Validate owned workspace skill copies before
+    removing worktrees; stop on changed or unmanaged skill content and preserve verified skill
+    snapshots and local copies alongside archived coordination history.`,
+  }),
+  "hub-skills": Object.freeze({
+    description: "Configure optional hub skill defaults for future workspaces without changing existing tickets",
+    agent: "build",
+    template: `Follow the multirepo-workspaces skill's Manage Hub Skill Defaults workflow and its
+references/workspace-skills.md. Treat $ARGUMENTS as optional hub and operation answers; ask for
+missing or ambiguous values. Target only defaults in HUB.yml. Status is read-only; preview the
+requested changes and obtain confirmation before editing. Never change existing ticket snapshots
+or copies, install skills globally, or introduce subagent assignments. If the user means one
+existing ticket, direct them to /workspace-skills instead of silently switching scope.`,
+  }),
+  "workspace-skills": Object.freeze({
+    description: "Inspect or change one existing ticket workspace's independent optional skill selection",
+    agent: "build",
+    template: `Follow the multirepo-workspaces skill's Manage Workspace Skills workflow and its
+references/workspace-skills.md. Treat $ARGUMENTS as optional hub, ticket, and operation answers.
+Target only one existing ticket's independent selection; ask for a missing or ambiguous ticket.
+Never edit HUB.yml. For defaults for future workspaces, direct the user to /hub-skills instead
+of silently switching scope. Use scripts/workspace-skills.py for ticket status, init, add, remove,
+and sync. Status is read-only. Preview mutations without
+--apply, show copies/removals and warnings, then obtain confirmation before applying. Never
+inherit changed hub defaults into existing snapshots, overwrite edited or unmanaged copies,
+install globally, mutate source skill folders, or write skill files inside repositories.
+Legacy instruction migration requires separate review; initialization alone does not remove old rules.`,
+  }),
   "workspace-control-init": Object.freeze({
     description: "Interactively create an external control hub for one workspace vertical",
     agent: "build",

@@ -4,8 +4,7 @@
 from __future__ import annotations
 
 import argparse
-import json
-import os
+import importlib.util
 import re
 import sys
 from pathlib import Path
@@ -14,8 +13,6 @@ from pathlib import Path
 BOARD_LINK = re.compile(r"Tablero de [ée]pica:\s*(?P<path>\S+)", re.IGNORECASE)
 TICKET_KEY = re.compile(r"\b[A-Z][A-Z0-9]+-\d+\b")
 NON_TICKET_PREFIXES = {"DEC", "PLAN", "PR", "SESS"}
-SHOW_ME = "show-me"
-OFFICIAL_SHOW_ME_SOURCE = "humanlayer/skills"
 
 
 def expand(value: str) -> Path:
@@ -53,97 +50,38 @@ def issue(messages: list[tuple[str, str]], level: str, text: str) -> None:
     messages.append((level, text))
 
 
-def has_show_me_name(path: Path) -> bool:
-    if not path.is_file():
-        return False
+def diagnose_skills(workspace_hub: Path, messages: list[tuple[str, str]]) -> None:
+    helper = Path(__file__).resolve().parents[2] / "multirepo-workspaces/scripts/workspace-skills.py"
+    if not helper.is_file():
+        issue(messages, "WARN", "workspace skill diagnostics unavailable; load the multirepo-workspaces helper")
+        return
+    # Reuse the portable owner/validator without creating __pycache__ during read-only diagnosis.
+    spec = importlib.util.spec_from_file_location("workspace_skills", helper)
+    module = importlib.util.module_from_spec(spec)
+    previous = sys.dont_write_bytecode
     try:
-        content = path.read_text(encoding="utf-8")
-    except OSError:
-        return False
-    match = re.match(r"^---\s*$([\s\S]*?)^---\s*$", content, re.MULTILINE)
-    return bool(
-        match
-        and re.search(r"^name:\s*show-me\s*$", match.group(1), re.MULTILINE)
-        and re.search(r"^description:\s*\S", match.group(1), re.MULTILINE)
-    )
-
-
-def workspace_skill_roots(workspace_hub: Path) -> list[Path]:
-    roots = [workspace_hub]
-    for ticket in workspace_hub.iterdir():
-        if ticket.is_dir() and not ticket.name.startswith("."):
-            roots.append(ticket)
-            roots.extend(child for child in ticket.iterdir() if child.is_dir() and not child.name.startswith("."))
-    return roots
-
-
-def show_me_paths(workspace_hub: Path) -> dict[str, set[str]]:
-    home = Path.home()
-    paths: dict[Path, set[str]] = {
-        home / ".config" / "opencode" / "skills" / SHOW_ME / "SKILL.md": {"OpenCode"},
-        home / ".agents" / "skills" / SHOW_ME / "SKILL.md": {"OpenCode"},
-        home / ".claude" / "skills" / SHOW_ME / "SKILL.md": {"OpenCode", "Claude Code"},
-    }
-    for root in workspace_skill_roots(workspace_hub):
-        paths[root / ".opencode" / "skills" / SHOW_ME / "SKILL.md"] = {"OpenCode"}
-        paths[root / ".agents" / "skills" / SHOW_ME / "SKILL.md"] = {"OpenCode"}
-        paths[root / ".claude" / "skills" / SHOW_ME / "SKILL.md"] = {"OpenCode", "Claude Code"}
-    return {str(path): agents for path, agents in paths.items() if has_show_me_name(path)}
-
-
-def show_me_sources(workspace_hub: Path) -> set[str]:
-    home = Path.home()
-    state_home = Path(os.environ.get("XDG_STATE_HOME", home / ".local" / "state"))
-    locks = [
-        *(root / "skills-lock.json" for root in workspace_skill_roots(workspace_hub)),
-        state_home / "skills" / ".skill-lock.json",
-        home / ".agents" / ".skill-lock.json",
-    ]
-    sources: set[str] = set()
-    for lock in locks:
-        try:
-            entry = json.loads(lock.read_text(encoding="utf-8")).get("skills", {}).get(SHOW_ME, {})
-        except (OSError, json.JSONDecodeError):
+        sys.dont_write_bytecode = True
+        spec.loader.exec_module(module)
+    finally:
+        sys.dont_write_bytecode = previous
+    try:
+        defaults = module.read_selection(workspace_hub / "HUB.yml")
+        issue(messages, "INFO", f"hub skill defaults: {len(defaults)}; existing tickets retain independent snapshots")
+    except (ValueError, OSError, TypeError) as error:
+        issue(messages, "WARN", f"new-workspace skill defaults invalid: {error}")
+    for ticket in sorted(workspace_hub.iterdir()):
+        if ticket.name.startswith(".") or not (ticket / ".coordination/REPOSITORIES.yml").is_file():
             continue
-        for field in ("source", "sourceUrl"):
-            value = entry.get(field)
-            if isinstance(value, str) and value:
-                sources.add(value)
-    return sources
-
-
-def official_show_me_source(source: str) -> bool:
-    normalized = source.rstrip("/").lower()
-    return normalized == OFFICIAL_SHOW_ME_SOURCE or normalized == f"https://github.com/{OFFICIAL_SHOW_ME_SOURCE}"
-
-
-def diagnose_show_me(workspace_hub: Path, messages: list[tuple[str, str]]) -> None:
-    paths = show_me_paths(workspace_hub)
-    agents = set().union(*paths.values()) if paths else set()
-    missing = [agent for agent in ("OpenCode", "Claude Code") if agent not in agents]
-    sources = show_me_sources(workspace_hub)
-    install_agents = {"OpenCode": "opencode", "Claude Code": "claude-code"}
-
-    if missing:
-        available = ", ".join(sorted(agents)) or "neither agent"
-        missing_agents = " ".join(install_agents[agent] for agent in missing)
-        issue(messages, "WARN", f"show-me is available for {available}; missing for {', '.join(missing)}")
-        issue(
-            messages,
-            "INFO",
-            "install show-me with: npx skills add humanlayer/skills --skill show-me --global --agent " + missing_agents,
-        )
-        return
-
-    if not sources:
-        issue(messages, "WARN", "show-me is available for OpenCode and Claude Code, but its source cannot be verified")
-        return
-
-    if any(official_show_me_source(source) for source in sources):
-        issue(messages, "OK", "official humanlayer/skills show-me is available for OpenCode and Claude Code")
-        return
-
-    issue(messages, "WARN", "show-me is available for OpenCode and Claude Code, but is not from humanlayer/skills")
+        try:
+            result = module.inspect(ticket)
+            if result["status"] == "legacy":
+                issue(messages, "INFO", f"{ticket.name}: no workspace skill snapshot (legacy; not migrated)")
+            else:
+                issue(messages, "OK", f"{ticket.name}: {len(result['skills'])} selected workspace skills verified")
+            for warning in result["warnings"]:
+                issue(messages, "WARN", f"{ticket.name}: {warning}")
+        except (ValueError, OSError, KeyError, TypeError) as error:
+            issue(messages, "ERROR", f"{ticket.name}: workspace skills drift: {error}")
 
 
 def ticket_directories(workspace_hub: Path) -> dict[str, Path]:
@@ -205,7 +143,7 @@ def diagnose(workspace_hub: Path, control_hub: Path) -> list[tuple[str, str]]:
     if not control_hub.is_dir():
         issue(messages, "ERROR", f"control hub does not exist: {control_hub}")
         return messages
-    diagnose_show_me(workspace_hub, messages)
+    diagnose_skills(workspace_hub, messages)
     if not workspace_manifest.is_file():
         issue(messages, "ERROR", f"missing workspace manifest: {workspace_manifest}")
 

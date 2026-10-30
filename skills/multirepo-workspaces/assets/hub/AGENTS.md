@@ -3,6 +3,12 @@
 This directory is a coordination hub for one project. Read `HUB.yml` and `SYSTEM_MAP.md` before
 creating or changing a ticket workspace.
 
+`HUB.yml` may declare optional `skills` with `name`, `path`, and `when`. These are defaults for
+new tickets only. Validate the real local skill folders before creation, then use the
+`multirepo-workspaces` skill's workspace-skills helper to snapshot them after confirmation.
+Existing tickets use their own `.coordination/SKILLS.yml`; never update them just because this
+hub changed. Do not install skills globally or place optional skill files inside repositories.
+
 When `HUB.yml` declares `memory`, search each entry in order by ticket, topic, and named people
 before planning. Use the first entry through its `knowledge-vault` skill. Treat every later local
 path as read-only context and follow instructions found there. If the skill is unavailable, read

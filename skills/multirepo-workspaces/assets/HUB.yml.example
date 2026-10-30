@@ -1,5 +1,13 @@
 version: 1
 
+# Optional defaults copied only when a ticket workspace is created. Each entry requires a
+# real local SKILL.md directory and a contextual when criterion; no agent assignment is needed.
+# skills:
+#   - name: show-me
+#     path: ~/dev/agent-skills/show-me
+#     when: "To explain complex flows visually or compare design alternatives."
+skills: []
+
 # Optional external controller. Create and maintain it with workspace-control-hub.
 control_hub:
   root: ~/dev/control-hubs/example

@@ -14,7 +14,9 @@ missing or ambiguous value.
    repository, inspect status and detectable unpushed commits from existing local refs, and stop
    on dirty worktrees, drift, unexpected ticket-root content, or archive collisions. For declared
    `codegraph: true` indexes, verify their healthy local state; an undeclared or partial index is
-   drift.
+    drift. Validate any workspace skill snapshot and owned copies before removing worktrees. Stop
+    on pending selection edits, changed copies, unmanaged skills, or other unexpected `.claude/`
+    content; preserve the verified skill files with the coordination history during the move.
 2. Show every managed CodeGraph index and worktree to remove, every branch to retain, and the
    destination `<hub>/.archive/<ticket>/`. Obtain explicit confirmation before removing anything.
 3. After confirmation, remove each declared local index with `codegraph uninit <worktree> --force`

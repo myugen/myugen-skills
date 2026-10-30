@@ -18,7 +18,7 @@ Code users can install every skill in one step instead of symlinking each one by
 | Skill | What it does |
 |-------|--------------|
 | [`knowledge-vault`](./skills/knowledge-vault) | Manage an Obsidian vault (via the `obsidian` CLI) as shared long-term memory for agents and humans — plans, decisions, session notes, and foundational knowledge about people, teams, and projects. |
-| [`multirepo-workspaces`](./skills/multirepo-workspaces) | Initialize project hubs and safely manage ticket-scoped Git worktree workspaces across multiple repositories, using hub metadata and coordination artifacts without converting source clones into a monorepo. |
+| [`multirepo-workspaces`](./skills/multirepo-workspaces) | Initialize project hubs and safely manage ticket-scoped Git worktrees, independent optional skill selections, and coordination artifacts without converting source clones into a monorepo. |
 | [`workspace-control-hub`](./skills/workspace-control-hub) | Create and query an external, per-vertical control hub that connects epics, parallel ticket workspaces, dependencies, readiness, and delivery evidence without replacing their authoritative systems. |
 
 _New skills get added here as the hub grows — see [Adding a skill](#adding-a-skill)._
@@ -85,7 +85,7 @@ other entries:
 ```
 
 The V2 plugin registers the portable skills included in its installed repository/package and the `/workspace-init`, `/workspace-new`,
-`/workspace-archive`, `/workspace-control-init`, `/workspace-control-status`, and
+`/workspace-archive`, `/hub-skills`, `/workspace-skills`, `/workspace-control-init`, `/workspace-control-status`, and
 `/workspace-control-doctor` commands without replacing existing user definitions. Skills retain
 their adjacent scripts, assets, and references; loading does not fetch another copy from `main`.
 Update the Git plugin when you want the latest version. The adapter does not run Claude's memory
@@ -160,9 +160,9 @@ or publishing credentials. `package.json` supports Git-based installation and is
 pinned OpenCode runtime, and checking the installable artifact; none of these operations
 publishes the plugin.
 
-### Workspace commands (Claude Code)
+### Hub and workspace commands (Claude Code)
 
-The installed Claude plugin exposes three manual commands over the portable
+The installed Claude plugin exposes manual commands over the portable
 [`multirepo-workspaces`](./skills/multirepo-workspaces) skill:
 
 - `/myugen-skills:workspace:init [hub-name]` — asks for a project/hub, its source repositories,
@@ -174,30 +174,61 @@ The installed Claude plugin exposes three manual commands over the portable
 - `/myugen-skills:workspace:archive [hub-name] [ticket]` — validates that every ticket worktree
   is clean, removes it without force while retaining its branch, then moves its coordination
   history to `<hub>/.archive/<ticket>/` after confirmation.
+- `/myugen-skills:hub:skills [hub-name] [status|add|remove|edit]` — the primary skill configuration
+  command: inspects or changes only `HUB.yml` defaults for future workspaces after confirmation,
+  without modifying existing tickets. `status` is read-only.
+- `/myugen-skills:workspace:skills [hub-name] [ticket] [status|init|add|remove|sync]` — adjusts only
+  one existing ticket's independent selection for experiments or exceptions. Mutations are previewed
+  before confirmation; skills are copied outside repositories, never installed globally.
 - `/myugen-skills:control:init [workspace-hub] [control-hub]` — creates a validated external
   per-vertical controller and records its reciprocal workspace-hub link after confirmation.
 - `/myugen-skills:control:status [control-hub] [epic]` — reports ready work, blockers, delivery
   evidence, and freshness without changing local or external systems.
 - `/myugen-skills:control:doctor [workspace-hub] [control-hub]` — read-only structural diagnosis
   for a structured controller or legacy Markdown epic boards; it never applies a migration. It also
-  reports whether the official `show-me` skill is locally available to OpenCode and Claude Code.
+  verifies selected workspace skill copies and reports legacy instructions or detectable global
+  collisions, without requiring an unselected skill.
 
 Arguments are optional answers, not permission to skip validation. The commands are
 Claude-specific adapters; other agents use the same portable skill workflow directly.
 
-### Ticket Visualizations
+### Optional workspace skills
 
-Every task in a new multirepo ticket workspace uses the official
-[`show-me`](https://github.com/humanlayer/skills/tree/main/plugins/show-me) skill before editing to
-show the intended change, and after validation to show the actual code and diff. Install it for the
-agents you use before starting ticket work:
+Start with `/myugen-skills:hub:skills <hub>` in Claude Code, or `/hub-skills` in OpenCode, to
+configure optional defaults for future workspaces. It asks for the operation and missing values,
+previews changes, and edits only the hub's `HUB.yml` after confirmation. You can also edit that
+file directly, referencing real local skill folders:
 
-```sh
-npx skills add humanlayer/skills --skill show-me --global --agent opencode claude-code
+```yaml
+skills:
+  - name: show-me
+    path: ~/dev/agent-skills/show-me
+    when: "To explain complex flows visually or compare design alternatives."
 ```
 
-The workspace doctor only inspects local skill files and lock metadata. It reports readiness and
-prints the appropriate install command when needed; it never installs the skill itself.
+Use `skills: []` for none. `show-me` is optional, not a prerequisite or an every-task requirement.
+The YAML references an existing skill, including a custom one with its own `SKILL.md`; it never
+defines a skill body or assigns coordinating subagents. The main session chooses when to use it.
+
+Creating a ticket copies this selection to `.coordination/SKILLS.yml`, generates contextual
+`SKILLS.md` guidance imported by Claude's instructions, and copies complete skill folders into
+`<ticket>/.claude/skills/`. All files live outside repository worktrees. Changes to hub defaults or
+original skill content do not affect existing tickets; each can add or remove skills independently.
+CodeGraph keeps its existing separate per-repository configuration and lifecycle.
+
+The portable `skills/multirepo-workspaces/scripts/workspace-skills.py` helper requires Python 3.9+
+and supports read-only `validate`/`status` plus preview-first `init`, `add`, `remove`, and `sync`.
+Mutations require `--apply` after confirmation. It protects edited or unmanaged copies and never
+modifies source folders or global configuration. Existing tickets require explicit opt-in and a
+separate review of old instruction files; inspection never migrates them automatically.
+
+Start Claude Code or OpenCode at the ticket root for discovery. A Claude session inside a worktree
+can add the ticket root with `--add-dir` or `/add-dir` and explicitly read its guidance. **Global,
+bundled, plugin, and repository-owned skills remain independent**; local selection is not a runtime
+sandbox. Keep optional originals outside global discovery directories for workspace-only use.
+The helper and doctor warn about detectable globals and collisions without uninstalling anything.
+See [workspace skills](./skills/multirepo-workspaces/references/workspace-skills.md) for the schema,
+commands, discovery limits, migration, and archive safeguards.
 
 ## Automatic memory recall and capture (Claude Code)
 

@@ -4,6 +4,16 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- Added optional hub skill defaults with `name`, local `path`, and contextual `when` criteria,
+  copied once into independent ticket selections with full workspace-local skill folders.
+- Added a stdlib-only, preview-first workspace skill manager with ownership checks, generated
+  guidance, safe add/remove/sync, legacy diagnostics, and global collision warnings.
+- Added Claude and OpenCode workspace-skills command adapters and snapshot-aware doctor checks.
+- Added separate `hub:skills` (Claude) and `/hub-skills` (OpenCode) commands as the primary entry
+  point for future-workspace defaults; workspace-skills now targets existing tickets only.
+
 ### Removed
 
 - Removed npm publication and GitHub release automation, including the opt-in variable, OIDC
@@ -13,6 +23,9 @@ All notable changes to this project are documented in this file.
 
 - Marked the package private to prevent npm publication while retaining GitHub installation
   and local installed-artifact tests.
+- Replaced unconditional show-me requirements in new workspace instructions with optional,
+  task-relevant skill use in the main session. Existing workspaces require explicit migration;
+  CodeGraph configuration and lifecycle are unchanged.
 
 ## [2.0.0] - 2026-10-30
 

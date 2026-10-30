@@ -19,9 +19,10 @@ Before changing code:
    <worktree>` to confirm a healthy index for that exact worktree before querying it. Prefer
    CodeGraph for structural exploration and call paths when it is healthy; pass that worktree as
    `projectPath` to MCP tools.
-7. Verify the official `show-me` skill from `humanlayer/skills` is available to the active agent.
-   If it is not, stop and suggest `npx skills add humanlayer/skills --skill show-me --global
-   --agent <agent>`.
+7. Read `.coordination/SKILLS.yml` and `.coordination/SKILLS.md` when present. Use selected
+   optional skills in the main session when their `when` criteria fit the task. This is an
+   independent workspace snapshot, not live inheritance from `HUB.yml`. Missing skill files or
+   stale guidance are drift to report, not permission to install globally or change the selection.
 
 Work only in the declared worktrees for this ticket. Do not modify source clones, other ticket
 workspaces, or repositories outside the declared scope. Do not initialize a Git repository in
@@ -39,10 +40,10 @@ Do not initialize, rebuild, uninitialize, or manually delete a CodeGraph index o
 explicit workspace creation or archive operation. Report an absent, partial, failed, mismatched,
 or undeclared index as drift.
 
-For every task, use `show-me` before editing to present the intended change from the plan and
-current code. After implementation and validation, use it again from the actual code and diff,
-identifying any deviation from the intended shape. Use the smallest useful visual; do not create
-HTML or workspace artifacts unless the user asks.
+Optional skill copies live in the ticket root's `.claude/skills/`, outside all repositories.
+Start the agent at that root for discovery. Selection does not require invoking each skill on
+every task, and does not require a coordinating subagent. Global and repository-owned skills are
+outside this selection; report collisions rather than claiming that this is a sandbox.
 
 At the end, persist decisions or context that will outlive the ticket only through the primary
 `knowledge-vault`. Keep ticket-specific state in these coordination files. If primary persistence

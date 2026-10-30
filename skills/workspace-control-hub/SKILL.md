@@ -73,7 +73,10 @@ together, but do not duplicate ticket plans, specifications, or durable decision
 `scripts/control-hub-doctor.py` is deliberately read-only. It can inspect a new structured
 controller or a legacy Markdown-only epic hub such as FunLab. It reports missing reciprocal links,
 orphaned ticket entries, ticket workspaces without epic links, legacy migration candidates, and
-whether the official `humanlayer/skills` `show-me` skill is available to OpenCode and Claude Code.
+the integrity of each ticket's independent optional skill snapshot. It reuses the
+`multirepo-workspaces` skill's helper when available, reports legacy tickets without migrating
+them, and warns about detectable global skill collisions and old mandatory show-me instructions.
+An unselected `show-me` is not a missing dependency, and no global installation is suggested.
 
 ```sh
 python3 skills/workspace-control-hub/scripts/control-hub-doctor.py \

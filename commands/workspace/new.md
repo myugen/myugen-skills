@@ -18,9 +18,13 @@ for every missing or ambiguous value.
 3. Verify the CodeGraph CLI for every selected repository configured with `codegraph: true`. Show
    the complete plan: ticket path, selected repositories, source paths, worktree paths, branches,
    start points, and CodeGraph policies. Obtain explicit confirmation before creating coordination
-   files or worktrees.
+    files or worktrees. For a new ticket, validate the hub's optional skill defaults with the
+    workspace-skills helper and include their paths and `when` criteria in this preview. Existing
+    tickets retain their own snapshot; never reapply changed hub defaults.
 4. Create full linked Git worktrees and coordination metadata, recording each effective CodeGraph
    policy before initializing its worktree-local index. Report a truthful, resumable partial state
-   if a later step fails.
+    if a later step fails. Before creating worktrees, initialize the confirmed independent skill
+    snapshot, guidance, ownership state, and full copies under the ticket root's `.claude/skills/`.
+    Stop on skill setup failure; never install globally or write skills inside repositories.
 5. Never fetch, pull, push, reset, clean, force, overwrite existing workspace content, or mutate
    source checkouts.

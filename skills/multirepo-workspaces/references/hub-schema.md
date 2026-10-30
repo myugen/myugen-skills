@@ -46,6 +46,11 @@ created beneath the workspace root, and is governed by `workspace-control-hub`.
 ```yaml
 version: 1
 
+skills:
+  - name: show-me
+    path: ~/dev/agent-skills/show-me
+    when: "To explain complex flows visually or compare design alternatives."
+
 control_hub:
   root: ~/dev/control-hubs/example
 
@@ -93,6 +98,10 @@ repositories:
 | Path | Required | Meaning |
 |------|----------|---------|
 | `version` | Recommended | Schema version. Use `1` for this document. |
+| `skills` | No | Optional defaults copied once when creating a ticket. Absence or `[]` selects no optional skills. |
+| `skills[].name` | Yes, per entry | Unique lowercase kebab-case skill identifier matching its `SKILL.md` name. |
+| `skills[].path` | Yes, per entry | Absolute or home-relative path to a real local skill directory, not a YAML skill definition. |
+| `skills[].when` | Yes, per entry | Single-line contextual usage criterion for the main session; selection does not imply mandatory invocation. |
 | `control_hub.root` | No | Absolute or home-relative external control-hub directory. Its `CONTROL.yml.workspace_hub` must resolve back to this hub. |
 | `memory` | No | Ordered local memory sources. Absence or `[]` preserves legacy user-level vault resolution. |
 | `memory[].name` | Yes, per entry | Unique identifier using letters, digits, `.`, `_`, and `-`. |
@@ -112,6 +121,19 @@ repositories:
 
 Keep names and roles portable. Organization-specific topology belongs in each hub's live
 `HUB.yml` and `SYSTEM_MAP.md`, not in the skill.
+
+## Workspace Skills
+
+The hub selection is a template, not live inheritance. New tickets receive their own
+`.coordination/SKILLS.yml`, generated `.coordination/SKILLS.md`, ownership state, and complete
+copies in `<ticket>/.claude/skills/`. Changes to hub defaults or original skill content never
+silently alter existing tickets. Their snapshots remain authoritative even if current hub defaults
+are invalid. There is no agent or subagent assignment in this schema.
+
+Use the canonical scalar/list subset and the helper in [workspace skills](workspace-skills.md)
+for validation, previews, confirmed local changes, discovery limits, explicit legacy migration,
+and archival rules. Skill copies belong outside repository worktrees; global installations are
+neither required nor changed. CodeGraph remains a separate per-repository policy.
 
 ## Workspace Memory
 

@@ -1,6 +1,6 @@
 ---
 name: multirepo-workspaces
-description: Creates, archives, and safely manages local, ticket-scoped Git worktree workspaces spanning multiple repositories without making a monorepo or changing source clones. It should be used for requests such as "create a workspace for ticket X", "set up a multirepo environment", "prepare worktrees for this vertical", "add a repository to the ticket workspace", "archive a multirepo workspace", or "close a multirepo workspace", including equivalent requests such as "crea un workspace", "monta un entorno multirepo", and "limpia el workspace".
+description: Creates, archives, and safely manages local, ticket-scoped Git worktree workspaces and their optional skills without making a monorepo or changing source clones. It should be used for requests such as "create a workspace for ticket X", "set up a multirepo environment", "add a repository to the ticket workspace", "configure workspace skills", "add or remove a skill from this workspace", or "archive a multirepo workspace", including "crea un workspace", "configura las skills del hub", "añade esta skill al workspace", and "limpia el workspace".
 ---
 
 # Multirepo Workspaces
@@ -24,10 +24,12 @@ reorganized into a monorepo.
 - When `HUB.yml` declares `control_hub.root`, also read that controller's `CONTROL.yml` and use
   `workspace-control-hub` for epic registration, cross-workspace status, and reconciliation.
   Its absence is valid and preserves the standalone workspace workflow.
-- Every ticket task requires the official `show-me` skill from `humanlayer/skills`. Before changing
-  code, confirm it is available to the active agent. If it is absent, stop and suggest
-  `npx skills add humanlayer/skills --skill show-me --global --agent <agent>`; do not substitute a
-  locally improvised version.
+- Optional skills, including `show-me`, are selected per workspace. Read its own
+  `.coordination/SKILLS.yml` and generated `SKILLS.md` when present; use each skill in the main
+  session when its contextual `when` criterion fits. No coordinating subagent is required.
+  Missing selection metadata is a legacy workspace, not permission to inherit today's hub defaults.
+- Use Python 3.9+ for `scripts/workspace-skills.py`. Read
+  [workspace skills](references/workspace-skills.md) before configuring defaults or managing copies.
 - Read [the hub schema](references/hub-schema.md) before creating or changing a hub, and when
   validating fields or resolving repository paths.
 
@@ -45,6 +47,9 @@ source clones and their roles; it is never itself a Git repository and does not 
    local sources: the first must be a `knowledge-vault` primary with its filesystem path and exact
    Obsidian vault name; later entries are skill-less read-only paths. Follow the canonical subset
    in the hub schema rather than emitting arbitrary YAML.
+   Also ask whether new workspaces should receive optional skills. Collect `name`, the absolute or
+   home-relative `path` of a real skill folder, and a single-line `when` criterion for each. Default
+   to `skills: []`; do not assume `show-me` or invent skill bodies or subagent assignments.
 4. Validate every source catalog and source clone without changing it. Read its Git status and
    confirm the resolved path is the expected repository.
 5. Validate configured memory without changing it. Normalize every path and report missing or
@@ -57,7 +62,8 @@ source clones and their roles; it is never itself a Git repository and does not 
 7. Before the first write, validate the hub name, destination containment, repository uniqueness,
    and any pre-existing hub state. Show the full file layout, repository inventory, each
    repository's CodeGraph policy, and the ordered writable/read-only memory roles, then get
-   explicit confirmation.
+   explicit confirmation. Include the optional skill selection, source folders, and usage criteria;
+   validate each folder's matching `SKILL.md` without executing any of its scripts.
 8. Optionally collect an external control-hub root. Validate that it is a user-approved location
    separate from the workspace hub; do not initialize Git there. Create it through
    `workspace-control-hub` before recording its reciprocal reference.
@@ -99,7 +105,11 @@ See [the hub schema](references/hub-schema.md) for names, layout, containment, a
    `codegraph` CLI is available and inspect `codegraph help init` and `codegraph help status`.
    Show the proposed repository, source path, worktree path, branch, role, start point, and
    CodeGraph policy, then get explicit confirmation. Do not run `codegraph install`; agent setup
-   is a separate, user-managed prerequisite.
+    is a separate, user-managed prerequisite.
+    For a new workspace, also run the workspace-skills helper's read-only `validate --hub <hub>`
+    before the first write. Include its skill defaults and criteria in the confirmation preview.
+    For an existing workspace, validate its own snapshot instead; changed hub defaults never alter
+    or invalidate an existing ticket's skill selection.
 7. Inspect any existing ticket directory. For each declared `codegraph: true` worktree, inspect
    `codegraph status --json <worktree>` before any write: a healthy matching index is a no-op, an
    absent index may be initialized only after confirmation, and a partial, failed, or mismatched
@@ -112,7 +122,12 @@ See [the hub schema](references/hub-schema.md) for names, layout, containment, a
    `control.epic_record` in `REPOSITORIES.yml`; do not add either field when no epic is supplied.
 9. Initialize the ticket's root `AGENTS.md`, `CLAUDE.md`, and `.coordination/` files before
    creating worktrees. Set `REPOSITORIES.yml` to the actual hub and ticket with an empty
-   `repositories` list, not placeholders.
+    `repositories` list, not placeholders. Then preview and apply `workspace-skills.py init
+    --workspace <ticket>` after confirmation to create its independent `SKILLS.yml`, generated
+    `SKILLS.md`, ownership state, and complete local skill copies under `<ticket>/.claude/skills/`.
+    Never copy skills into a source clone or worktree. Stop on a failed skill setup and report
+    partial coordination state before creating worktrees. On a rerun, `init` uses the existing
+    snapshot, never the current hub selection; it does not migrate legacy instruction files.
 10. Add one worktree per selected repository. Use the source clone only as Git's worktree
    manager; do not change its checkout or files:
 
@@ -158,10 +173,10 @@ or create a new branch from an agreed local ref.
   changing an existing ticket workspace.
 - Resolve configured memory from the workspace hub before planning. Read secondary local memory
   in declaration order, but persist only through the primary `knowledge-vault` skill.
-- For every task, use the official `show-me` skill before editing to present the intended change
-  from the plan and current code. After implementation and validation, use it again to present the
-  actual code and diff, calling out any deviation from the intended shape. Use the smallest useful
-  visual, and do not write HTML or workspace artifacts unless the user explicitly asks.
+- Read the ticket's optional skill snapshot and contextual guidance. Selection means available,
+  not mandatory on every task; `show-me` has no special required status. Use the workspace-skills
+  helper's read-only `status` to diagnose missing copies, manual edits, and global collisions.
+  Missing optional skills do not justify global installation or silent changes to the selection.
 - When `REPOSITORIES.yml` declares `control`, read the referenced epic before changing ticket
   lifecycle metadata. Report an absent or mismatched reciprocal epic record as drift; do not
   silently repair it.
@@ -181,6 +196,51 @@ or create a new branch from an agreed local ref.
 - To update code, first clarify whether the user means a local merge/rebase, a remote fetch or
   pull, or only coordination metadata. Preview affected repositories and perform only the
   explicitly requested operation.
+
+## Manage Hub Skill Defaults
+
+The hub is the primary configuration point for optional skills. Its `skills` block is a template
+for future workspaces only; changing it never updates existing ticket snapshots or copies.
+
+1. Identify the hub and requested operation: `status`, `add`, `remove`, or `edit`. Read its
+   `HUB.yml`, `SYSTEM_MAP.md`, and `AGENTS.md`. Ask for missing or ambiguous values rather than
+   selecting a ticket or another hub implicitly.
+2. For `status`, report the current defaults and usage criteria, then run the helper's read-only
+   `validate --hub <hub>` to report any invalid folders or definitions. An absent `skills` block
+   means no defaults; do not add it or repair validation errors during inspection.
+3. For `add` or `edit`, collect the actual `name`, local `path`, and contextual `when` values.
+   Follow the canonical schema in [workspace skills](references/workspace-skills.md), validate
+   each real folder's matching `SKILL.md`, and do not execute its scripts. An existing name is not
+   permission to replace an entry: clarify the intended edit. For `remove`, identify the exact
+   entry; an already absent entry is a no-op. Do not invent inline skills or subagent assignments.
+4. Preview the requested `skills` block changes and explain that only future workspaces will
+   receive them. Obtain explicit confirmation before editing only `HUB.yml`, preserving unrelated
+   fields and comments. Use `skills: []` when removing the final default. Never initialize or
+   synchronize existing tickets, modify original skill folders, or install globally.
+5. Run `validate --hub <hub>` after a confirmed change and report the result. If validation fails,
+   report the actual saved state and ask for direction rather than silently repairing or rolling
+   back the file. Keep CodeGraph's separate per-repository policy unchanged.
+
+Command adapters should keep this hub workflow separate from per-ticket adjustments below.
+
+## Manage Workspace Skills
+
+This workflow adjusts one existing ticket as an exception to the hub's defaults. Identify that
+ticket and read its own snapshot; never edit `HUB.yml` here. For future-workspace defaults, use
+**Manage Hub Skill Defaults** instead. Do not silently switch between these scopes.
+
+For an existing ticket, use `scripts/workspace-skills.py` with `--workspace <ticket>`:
+
+- `status` lists its independent selection and diagnostics without writing.
+- `init` previews initial setup, including explicit opt-in for a legacy workspace.
+- `add --name <name> --path <folder> --when <criterion>` previews a new local copy.
+- `remove --name <name>` previews removing only an unchanged, owned workspace copy.
+- `sync` previews applying explicit edits to that ticket's `SKILLS.yml`, not hub changes.
+
+Mutation commands are previews until repeated with `--apply` after confirmation. Stop on drift;
+never adopt unmanaged content, overwrite edited copies, change global configuration, or roll back
+worktrees. Source updates do not refresh existing copies implicitly. See
+[workspace skills](references/workspace-skills.md) for discovery, ownership, archive, and migration.
 
 ## Archive A Workspace
 
@@ -202,9 +262,14 @@ worktrees, retains their branches, then moves the ticket's coordination root to
    metadata has drifted, an expected worktree is missing, an enabled index is partial or
    mismatched, or preserving work is unclear. An unmanaged `.codegraph/` directory is drift and
    stops the archive.
-3. Inspect the ticket root. It may contain only the ticket adapters, `.coordination/`, and the
-   declared worktree directories. Stop on unexpected files or directories rather than deleting or
-   silently archiving them.
+3. Inspect the ticket root. It may contain only the ticket adapters, `.coordination/`, declared
+   worktree directories, and the managed `.claude/skills/` tree. When a skills snapshot exists, run
+   `workspace-skills.py status --workspace <ticket>` and verify ownership before removing any
+   worktree. Stop on changed or missing managed skills, pending selection edits, unmanaged skill
+   content, or other `.claude/` content. Empty managed skill directories are valid. Retain skill
+   copies, selection, guidance, and ownership state when moving the ticket into its archive; never
+   remove source skill folders or follow links. Legacy tickets without skill metadata remain valid.
+   Stop on other unexpected content rather than deleting or silently archiving it.
 4. Show every managed CodeGraph index to remove, every worktree to remove, every branch to retain,
    the archive destination, and the archive record to create. Obtain explicit confirmation before
    removing anything.
@@ -265,6 +330,8 @@ permission to delete history.
 - Show the repositories and branches before any ambiguous operation.
 - Never overwrite a hub, ticket, coordination file, or adapter file. Report incompatible or
   partial state and require confirmation before resuming.
+- Workspace skill changes may replace only helper-owned, verified unchanged generated files and
+  copies after confirmation. Never overwrite a user-edited skill or install one globally.
 - Never create a symlink, copy, or nested Git repository as a substitute for a full linked
   worktree. Do not alter sparse-checkout settings unless the user explicitly asks for that.
 
@@ -272,6 +339,9 @@ permission to delete history.
 
 - `references/hub-schema.md` documents `HUB.yml`, workspace memory, path resolution, validation
   rules, and the distinction between hub context and effective ticket scope.
+- `references/workspace-skills.md` describes optional skill defaults, independent snapshots,
+  contextual usage, local discovery, safe changes, and explicit migration.
+- `scripts/workspace-skills.py` validates, previews, copies, diagnoses, and changes workspace skills.
 - `assets/HUB.yml.example` and `assets/hub/` are provider-neutral hub scaffolding.
 - `assets/AGENTS.md` and `assets/CLAUDE.md` are ticket-root adapters that load or point agents
   to the coordination scope and plan while preserving the multi-repository boundary.

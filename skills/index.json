@@ -26,7 +26,7 @@
     },
     {
       "name": "multirepo-workspaces",
-      "version": "sha256:cafad95774e5cb75994d9a8180006ba16da962aa3e0682d706dce1879548960c",
+      "version": "sha256:c1bae073d69f30864b39a7cd3041e7e106bc160da1f87038a26b009ab7bf4444",
       "files": [
         "SKILL.md",
         "agents/openai.yaml",
@@ -42,12 +42,14 @@
         "assets/hub/AGENTS.md",
         "assets/hub/CLAUDE.md",
         "assets/hub/SYSTEM_MAP.md",
-        "references/hub-schema.md"
+        "references/hub-schema.md",
+        "references/workspace-skills.md",
+        "scripts/workspace-skills.py"
       ]
     },
     {
       "name": "workspace-control-hub",
-      "version": "sha256:86c6f57bf94f0909fcd865611a60ead0d948bc105045f44a73bff5a4f27453fe",
+      "version": "sha256:e92ff05388b87c59505f2ebf820f894421608ae9d436670f2613515c5a8098bf",
       "files": [
         "SKILL.md",
         "agents/openai.yaml",

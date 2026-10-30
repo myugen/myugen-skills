@@ -1,7 +1,7 @@
 import assert from "node:assert/strict"
 import { randomUUID } from "node:crypto"
 import { once } from "node:events"
-import { access, mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises"
+import { access, mkdir, mkdtemp, readFile, realpath, writeFile } from "node:fs/promises"
 import { createRequire } from "node:module"
 import { tmpdir } from "node:os"
 import { dirname, isAbsolute, join } from "node:path"
@@ -105,19 +105,21 @@ test("exports a native V2 definition and registers all workspace commands and po
 
 test("preserves existing commands and skills and supports transform replay and disposal", async () => {
   const customCommand = { name: "workspace-archive", description: "My archive", execute: async () => {} }
+  const customHubCommand = { name: "hub-skills", description: "My hub defaults", execute: async () => {} }
   const customSkill = { id: "knowledge-vault", name: "Local vault", content: "Local instructions", autoinvoke: false }
-  const state = runtime({ commandEntries: [customCommand], skillEntries: [customSkill] })
+  const state = runtime({ commandEntries: [customCommand, customHubCommand], skillEntries: [customSkill] })
   const catalog = JSON.parse(await readFile(join(repository, "skills/index.json"), "utf8"))
   await plugin.setup(state.ctx)
   await plugin.setup(state.ctx)
   for (let replay = 0; replay < 3; replay++) {
     assert.equal(state.commands().get(customCommand.name), customCommand)
+    assert.equal(state.commands().get(customHubCommand.name), customHubCommand)
     assert.equal(state.skills().get(customSkill.id), customSkill)
     assert.equal(state.commands().size, Object.keys(commands).length)
     assert.equal(state.skills().size, catalog.skills.length)
   }
   for (const registration of state.registrations) await registration.dispose()
-  assert.deepEqual([...state.commands().values()], [customCommand])
+  assert.deepEqual([...state.commands().values()], [customCommand, customHubCommand])
   assert.deepEqual([...state.skills().values()], [customSkill])
   assert.deepEqual(state.calls, [])
 })
@@ -193,6 +195,17 @@ test("installed package loads in a real isolated OpenCode V2 server", { skip: !p
   const customSkill = join(project, ".opencode", "skills", "knowledge-vault")
   await mkdir(customSkill, { recursive: true })
   await writeFile(join(customSkill, "SKILL.md"), "---\nname: Local Vault\ndescription: Project-owned vault instructions\n---\nUse the project-owned vault workflow.\n")
+  const source = join(directory, "workspace-skill-source")
+  await mkdir(source)
+  await writeFile(join(source, "SKILL.md"), "---\nname: workspace-test\ndescription: A workspace-local optional skill\n---\n# Workspace Test\nRead detail.md.\n")
+  await writeFile(join(source, "detail.md"), "Supporting workspace skill file\n")
+  await writeFile(join(directory, "HUB.yml"), `version: 1\nskills:\n  - name: workspace-test\n    path: ${JSON.stringify(source)}\n    when: "When evaluating workspace-local skill discovery."\n`)
+  await mkdir(join(project, ".coordination"))
+  await writeFile(join(project, ".coordination/REPOSITORIES.yml"), "version: 1\nrepositories: []\n")
+  const prepared = spawnSync("python3", [join(packageRoot, "skills/multirepo-workspaces/scripts/workspace-skills.py"), "init", "--workspace", project, "--apply"], {
+    encoding: "utf8", env: { ...process.env, HOME: home, PATH: `/usr/bin:/bin:/usr/sbin:/sbin:${process.env.PATH}`, PYTHONDONTWRITEBYTECODE: "1" },
+  })
+  assert.equal(prepared.status, 0, prepared.stdout + prepared.stderr)
   const env = {
     PATH: process.env.PATH, HOME: home, TMPDIR: process.env.TMPDIR || tmpdir(),
     XDG_CONFIG_HOME: join(home, "config"), XDG_DATA_HOME: join(home, "data"),
@@ -245,6 +258,11 @@ test("installed package loads in a real isolated OpenCode V2 server", { skip: !p
   assert.equal(registeredCommands.find((entry) => entry.name === "workspace-archive").description, "My archive override")
   const registeredSkills = api("get", "/api/skill")
   assert.match(registeredSkills.find((entry) => entry.id === "knowledge-vault").content, /project-owned vault/)
+  const workspaceSkill = registeredSkills.find((entry) => entry.id === "workspace-test")
+  assert.ok(workspaceSkill, JSON.stringify(registeredSkills))
+  assert.equal(workspaceSkill.path, await realpath(join(project, ".claude/skills/workspace-test/SKILL.md")))
+  assert.match(workspaceSkill.content, /Read detail.md/)
+  await access(join(dirname(workspaceSkill.path), "detail.md"))
   for (const id of ["multirepo-workspaces", "workspace-control-hub"]) {
     assert.ok(registeredSkills.find((entry) => entry.id === id).path.startsWith(packageRoot), id)
   }
