@@ -1,4 +1,4 @@
-name: Publish npm package
+name: Validate release and optionally publish npm
 
 on:
   release:
@@ -6,16 +6,25 @@ on:
 
 permissions:
   contents: read
-  id-token: write
 
 jobs:
+  validate:
+    uses: ./.github/workflows/ci.yml
+    with:
+      release_tag: ${{ github.event.release.tag_name }}
+
   publish:
-    if: ${{ !github.event.release.prerelease }}
+    needs: validate
+    if: ${{ !github.event.release.prerelease && vars.PUBLISH_NPM == 'true' }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v6
         with:
-          ref: ${{ github.event.release.tag_name }}
+          ref: ${{ github.sha }}
+          persist-credentials: false
 
       - uses: actions/setup-node@v6
         with:
@@ -23,13 +32,6 @@ jobs:
           registry-url: "https://registry.npmjs.org"
           package-manager-cache: false
 
-      - name: Verify release version
-        env:
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
-        run: |
-          set -euo pipefail
-          node -e 'const { version } = require("./package.json"); if (process.env.RELEASE_TAG !== `v${version}`) { throw new Error(`release tag ${process.env.RELEASE_TAG} does not match v${version}`) }'
-
       - run: npm test
       - run: npm pack --dry-run
-      - run: npm publish
+      - run: npm publish --provenance

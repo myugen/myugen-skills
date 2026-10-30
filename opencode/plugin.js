@@ -1,4 +1,7 @@
-const SKILL_CATALOG_URL = "https://raw.githubusercontent.com/myugen/myugen-skills/main/skills/"
+import { readFile, readdir } from "node:fs/promises"
+import { fileURLToPath } from "node:url"
+
+const SKILLS_DIRECTORY = new URL("../skills/", import.meta.url)
 
 export const commands = Object.freeze({
   "workspace-init": Object.freeze({
@@ -69,19 +72,69 @@ trackers, or remotes.`,
   }),
 })
 
-export default async function myugenSkillsPlugin() {
-  return {
-    config(config) {
-      config.skills ??= {}
-      config.skills.urls ??= []
-      if (!config.skills.urls.includes(SKILL_CATALOG_URL)) {
-        config.skills.urls.push(SKILL_CATALOG_URL)
-      }
+async function loadSkills() {
+  const entries = await readdir(SKILLS_DIRECTORY, { withFileTypes: true })
+  const skills = await Promise.all(entries.filter((entry) => entry.isDirectory()).map(async (entry) => {
+    const url = new URL(`${encodeURIComponent(entry.name)}/SKILL.md`, SKILLS_DIRECTORY)
+    let text
+    try {
+      text = await readFile(url, "utf8")
+    } catch (error) {
+      if (error.code === "ENOENT") return undefined
+      throw error
+    }
+    const header = text.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/)
+    const description = header?.[1].match(/^description:\s*(.+)$/m)?.[1].trim()
+    if (!description || /^[>|]/.test(description)) {
+      throw new Error(`${url}: expected the repository's single-line skill description`)
+    }
+    return {
+      id: entry.name,
+      name: entry.name,
+      description,
+      autoinvoke: true,
+      path: fileURLToPath(url),
+      content: text.slice(header[0].length).trim(),
+    }
+  }))
+  return skills.filter(Boolean)
+}
 
-      config.command ??= {}
-      for (const [name, command] of Object.entries(commands)) {
-        config.command[name] ??= { ...command }
-      }
-    },
+function expandPrompt(template, prompt) {
+  const expanded = { ...prompt, text: template.replaceAll("$ARGUMENTS", () => prompt.text) }
+  // Attachments survive expansion, but their offsets no longer refer to the expanded text.
+  for (const field of ["files", "agents", "skills"]) {
+    if (prompt[field]) expanded[field] = prompt[field].map(({ mention, ...attachment }) => attachment)
   }
+  return expanded
+}
+
+// V2 accepts an id/setup definition directly; keep this small adapter dependency-free.
+export default {
+  id: "myugen-skills",
+  async setup(ctx) {
+    const [skills, availableCommands] = await Promise.all([loadSkills(), ctx.command.list()])
+    // CommandEditor is add-only, so inspect existing names before installing fallbacks.
+    const existingNames = new Set(availableCommands.data.map((command) => command.name))
+
+    await ctx.skill.transform((editor) => {
+      for (const skill of skills) {
+        if (!editor.get(skill.id)) editor.add({ ...skill })
+      }
+    })
+
+    await ctx.command.transform((editor) => {
+      for (const [name, command] of Object.entries(commands)) {
+        if (existingNames.has(name)) continue
+        editor.add({
+          name,
+          description: command.description,
+          async execute({ sessionID, prompt, delivery }) {
+            await ctx.session.switchAgent({ sessionID, agent: command.agent })
+            await ctx.session.prompt({ ...expandPrompt(command.template, prompt), sessionID, delivery })
+          },
+        })
+      }
+    })
+  },
 }

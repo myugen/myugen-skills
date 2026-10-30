@@ -61,47 +61,112 @@ depends on who's using them:
   done
   ```
 
-### OpenCode
+### OpenCode V2 (server 2.2.2+)
 
-Install the complete OpenCode integration with the npm plugin:
+The adapter targets the native plugin API in **OpenCode server 2.2.2 or newer within V2**.
+Check the server with `opencode api get /api/info`; its version can differ from the terminal
+client's `opencode --version`. The isolated 2.1.1 executable did not load this directory-based
+setup; earlier releases are not supported by this adapter.
+
+Install directly from GitHub — **no npm publication is required**:
+
+```sh
+opencode plugin add github:myugen/myugen-skills
+```
+
+Or add the same source to `~/.config/opencode/opencode.jsonc` (or a project config), preserving
+other entries:
 
 ```jsonc
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugin": ["myugen-skills"]
+  "plugins": ["github:myugen/myugen-skills"]
 }
 ```
 
-The plugin adds this repository's public skill catalog and the `/workspace-init`, `/workspace-new`,
+The V2 plugin registers the portable skills included in its installed repository/package and the `/workspace-init`, `/workspace-new`,
 `/workspace-archive`, `/workspace-control-init`, `/workspace-control-status`, and
-`/workspace-control-doctor` commands without replacing an existing command or skill URL. Restart
-OpenCode after adding the plugin; the commands then appear in its slash-command menu. `opencode
-debug config` confirms that the plugin is registered.
+`/workspace-control-doctor` commands without replacing existing user definitions. Skills retain
+their adjacent scripts, assets, and references; loading does not fetch another copy from `main`.
+Update the Git plugin when you want the latest version. The adapter does not run Claude's memory
+hooks; those remain a separate Claude-only integration.
+
+Config changes reload automatically. Use `/reload` to force a full reload; no restart is required.
+Inspect the active plugin and registered resources with:
+
+```sh
+opencode plugin list
+opencode api get /api/command
+opencode api get /api/skill
+```
+
+For local development, point `plugins` at the **repository directory**, not `opencode/plugin.js`:
+
+```jsonc
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugins": ["/absolute/path/to/myugen-skills"]
+}
+```
+
+An optional npm distribution can also be installed with `opencode plugin add 'myugen-skills@^2'`
+once published. Version 2.x uses the native V2 `id`/`setup` API and domain transforms; OpenCode V1
+users should keep the 1.x plugin. Renaming the old `plugin` config key alone cannot port V1 code.
 
 For skills without the command adapters, OpenCode can instead load the public generated catalog
 directly from this repository:
 
 ```jsonc
 {
-  "skills": {
-    "urls": [
-      "https://raw.githubusercontent.com/myugen/myugen-skills/main/skills/"
-    ]
-  }
+  "$schema": "https://opencode.ai/config.json",
+  "skills": ["https://raw.githubusercontent.com/myugen/myugen-skills/main/skills/"]
 }
 ```
 
-Add this to `~/.config/opencode/opencode.jsonc`, then restart OpenCode and verify discovery
-with `opencode debug skill`. `skills/index.json` is generated from the skill directories and
+This skills-only alternative uses the public HTTP catalog, without installing command adapters.
+`skills/index.json` is generated from the skill directories and
 updated automatically after changes under `skills/` merge into `main`.
 
-#### Publishing the OpenCode plugin
+The plugin's V2 implementation and configuration follow the official
+[plugin migration guide](https://opencode.ai/v2/docs/build/plugins/migrate-v1) and
+[server API](https://opencode.ai/v2/docs/build/plugins/server).
 
-The first public npm release must be published manually, then npm trusted publishing can take
-over. From the matching release commit, run `npm login`, `npm test`, `npm pack --dry-run`, and
-`npm publish`. Then configure npm's trusted publisher as `myugen/myugen-skills` with
-`.github/workflows/publish-npm.yml` and allow `npm publish`. Later non-prerelease GitHub Releases
-publish through OIDC with provenance; no npm token is stored in GitHub.
+#### Validating the adapter
+
+`npm test` checks command execution, argument/attachment handling, overrides, replay, and the
+installed package including every supporting skill file. To also exercise the installed artifact
+in a real isolated V2 server, run:
+
+```sh
+OPENCODE_V2_BIN="/path/to/opencode-2.2.2-or-newer" npm test
+```
+
+The integration test uses a temporary home/configuration and in-memory database. It admits one
+prompt with `resume: false` to wait for plugin activation; it executes no model or agent tools
+and does not alter your real configuration. It is skipped when `OPENCODE_V2_BIN` is unset.
+Use an executable matching the supported server version, not an older client on your `PATH`.
+
+GitHub Actions runs the same suite, including the real installed-artifact integration, on pushes
+to `main` and pull requests. `.github/workflows/ci.yml` installs the pinned OpenCode 2.2.2 runtime
+under the runner's temporary directory, without credentials or model execution. It regenerates
+the catalog in its own workspace for tests; the separate index workflow still commits the public
+HTTP catalog after merges. Release validation instead requires the committed index to be current
+and the release tag to match `package.json`.
+
+#### Optional npm publishing
+
+GitHub releases always validate through the reusable CI workflow; **npm publishing is disabled
+by default** and is not required for GitHub installation. To enable the optional registry path:
+
+1. Publish the first npm version manually from its matching release commit with `npm login`,
+   `npm test`, `npm pack --dry-run`, and `npm publish`.
+2. Configure npm's trusted publisher as `myugen/myugen-skills`, workflow
+   `.github/workflows/publish-npm.yml`.
+3. Set the GitHub repository Actions variable `PUBLISH_NPM` to exactly `true`.
+
+Later non-prerelease releases publish only after validation succeeds, using OIDC with provenance.
+Only the publishing job receives `id-token: write`; no npm token is stored in GitHub. Leave the
+variable unset or set it to `false` to keep GitHub-only distribution.
 
 ### Workspace commands (Claude Code)
 

@@ -2,6 +2,29 @@
 
 All notable changes to this project are documented in this file.
 
+## [2.0.0] - 2026-10-30
+
+### Breaking
+
+- Replaced the OpenCode V1 function/config-hook entrypoint with a native V2 `id`/`setup`
+  definition and command/skill domain transforms, targeting OpenCode server 2.2.2+ within V2.
+  OpenCode V1 consumers should retain 1.x.
+
+### Changed
+
+- Documented direct GitHub installation as the primary OpenCode distribution, with native V2
+  `plugins` and `skills` configuration, directory-based local loading, and reload guidance.
+- Included complete portable skills in the installable package, preserving adjacent scripts,
+  references, and assets without network work inside registry transforms or SDK dependencies.
+- Preserved command arguments, prompt attachments, delivery mode, build-agent selection, and
+  user command/skill overrides through the V2 API. Claude's hooks remain unchanged.
+
+### Added
+
+- Added installed-artifact tests and opt-in verification in an isolated real OpenCode V2 server.
+- Added reusable PR/push/release validation with a pinned OpenCode V2 runtime. npm publication
+  now requires the explicit `PUBLISH_NPM=true` repository variable and successful validation.
+
 ## [1.11.0] - 2026-10-30
 
 ### Added

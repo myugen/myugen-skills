@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the static skill catalog consumed by OpenCode's skills.urls."""
+"""Generate the static HTTP skill catalog consumed by OpenCode."""
 
 from __future__ import annotations
 

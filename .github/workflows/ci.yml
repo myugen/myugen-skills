@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      release_tag:
+        description: Release tag to validate against the package version and committed catalog
+        required: false
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      OPENCODE_VERSION: "2.2.2"
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          package-manager-cache: false
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      # The separate catalog workflow commits generated changes after merges. Regenerate only
+      # this job's workspace for PR/push tests; release tags must already contain the correct file.
+      - name: Generate the test catalog
+        if: ${{ !inputs.release_tag }}
+        run: python3 scripts/generate-skill-index.py
+
+      - name: Verify the release catalog
+        if: ${{ inputs.release_tag != '' }}
+        run: python3 scripts/generate-skill-index.py --check
+
+      - name: Verify release version
+        if: ${{ inputs.release_tag != '' }}
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          node -e 'const { version } = require("./package.json"); if (process.env.RELEASE_TAG !== `v${version}`) { throw new Error(`release tag ${process.env.RELEASE_TAG} does not match v${version}`) }'
+
+      - name: Install the pinned OpenCode V2 runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --prefix "$RUNNER_TEMP/opencode" --no-package-lock --no-audit --no-fund "@opencode/cli@$OPENCODE_VERSION"
+          "$RUNNER_TEMP/opencode/node_modules/.bin/opencode" --version
+          echo "OPENCODE_V2_BIN=$RUNNER_TEMP/opencode/node_modules/.bin/opencode" >> "$GITHUB_ENV"
+
+      - name: Test including the real V2 server and installed artifact
+        run: npm test
+
+      - name: Verify package contents without publishing
+        run: npm pack --dry-run --ignore-scripts
