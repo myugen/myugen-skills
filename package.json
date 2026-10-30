@@ -1,6 +1,7 @@
 {
   "name": "myugen-skills",
   "version": "2.0.0",
+  "private": true,
   "description": "OpenCode V2 plugin for Myugen's organizational skills and workspace commands.",
   "type": "module",
   "main": "./opencode/plugin.js",
@@ -15,8 +16,7 @@
     "CHANGELOG.md"
   ],
   "scripts": {
-    "test": "node --test",
-    "prepublishOnly": "npm test"
+    "test": "node --test"
   },
   "engines": {
     "node": ">=22.14.0"
@@ -32,8 +32,5 @@
     "url": "git+https://github.com/myugen/myugen-skills.git"
   },
   "homepage": "https://github.com/myugen/myugen-skills",
-  "license": "UNLICENSED",
-  "publishConfig": {
-    "access": "public"
-  }
+  "license": "UNLICENSED"
 }

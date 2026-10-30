@@ -68,7 +68,7 @@ Check the server with `opencode api get /api/info`; its version can differ from 
 client's `opencode --version`. The isolated 2.1.1 executable did not load this directory-based
 setup; earlier releases are not supported by this adapter.
 
-Install directly from GitHub — **no npm publication is required**:
+Install directly from GitHub — **the plugin is not published to npm**:
 
 ```sh
 opencode plugin add github:myugen/myugen-skills
@@ -109,8 +109,7 @@ For local development, point `plugins` at the **repository directory**, not `ope
 }
 ```
 
-An optional npm distribution can also be installed with `opencode plugin add 'myugen-skills@^2'`
-once published. Version 2.x uses the native V2 `id`/`setup` API and domain transforms; OpenCode V1
+Version 2.x uses the native V2 `id`/`setup` API and domain transforms; OpenCode V1
 users should keep the 1.x plugin. Renaming the old `plugin` config key alone cannot port V1 code.
 
 For skills without the command adapters, OpenCode can instead load the public generated catalog
@@ -147,26 +146,19 @@ and does not alter your real configuration. It is skipped when `OPENCODE_V2_BIN`
 Use an executable matching the supported server version, not an older client on your `PATH`.
 
 GitHub Actions runs the same suite, including the real installed-artifact integration, on pushes
-to `main` and pull requests. `.github/workflows/ci.yml` installs the pinned OpenCode 2.2.2 runtime
+to `main`, pull requests, and manual dispatches. `.github/workflows/ci.yml` installs the pinned OpenCode 2.2.2 runtime
 under the runner's temporary directory, without credentials or model execution. It regenerates
 the catalog in its own workspace for tests; the separate index workflow still commits the public
-HTTP catalog after merges. Release validation instead requires the committed index to be current
-and the release tag to match `package.json`.
+HTTP catalog after merges.
 
-#### Optional npm publishing
+#### Repository-only distribution
 
-GitHub releases always validate through the reusable CI workflow; **npm publishing is disabled
-by default** and is not required for GitHub installation. To enable the optional registry path:
-
-1. Publish the first npm version manually from its matching release commit with `npm login`,
-   `npm test`, `npm pack --dry-run`, and `npm publish`.
-2. Configure npm's trusted publisher as `myugen/myugen-skills`, workflow
-   `.github/workflows/publish-npm.yml`.
-3. Set the GitHub repository Actions variable `PUBLISH_NPM` to exactly `true`.
-
-Later non-prerelease releases publish only after validation succeeds, using OIDC with provenance.
-Only the publishing job receives `id-token: write`; no npm token is stored in GitHub. Leave the
-variable unset or set it to `false` to keep GitHub-only distribution.
+The plugin is installed directly from this repository, without npm publication or GitHub Releases.
+Automation is limited to CI and updating the public skill catalog; there are no publishing jobs
+or publishing credentials. `package.json` supports Git-based installation and is marked
+`private: true` to block npm publication. npm remains a local/CI tool for tests, installing the
+pinned OpenCode runtime, and checking the installable artifact; none of these operations
+publishes the plugin.
 
 ### Workspace commands (Claude Code)
 

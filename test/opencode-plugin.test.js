@@ -175,6 +175,7 @@ test("installed package includes and registers complete skills without network o
     for (const file of entry.files) await access(join(dirname(skill.path), file))
   }
   const manifest = JSON.parse(await readFile(join(packageRoot, "package.json"), "utf8"))
+  assert.equal(manifest.private, true)
   assert.deepEqual(manifest.dependencies || {}, {})
 })
 

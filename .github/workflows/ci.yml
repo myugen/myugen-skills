@@ -5,13 +5,6 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
-  workflow_call:
-    inputs:
-      release_tag:
-        description: Release tag to validate against the package version and committed catalog
-        required: false
-        type: string
-        default: ""
 
 permissions:
   contents: read
@@ -41,21 +34,9 @@ jobs:
           python-version: "3.13"
 
       # The separate catalog workflow commits generated changes after merges. Regenerate only
-      # this job's workspace for PR/push tests; release tags must already contain the correct file.
+      # this job's workspace for tests, without competing with the catalog bot's commit.
       - name: Generate the test catalog
-        if: ${{ !inputs.release_tag }}
         run: python3 scripts/generate-skill-index.py
-
-      - name: Verify the release catalog
-        if: ${{ inputs.release_tag != '' }}
-        run: python3 scripts/generate-skill-index.py --check
-
-      - name: Verify release version
-        if: ${{ inputs.release_tag != '' }}
-        env:
-          RELEASE_TAG: ${{ inputs.release_tag }}
-        run: |
-          node -e 'const { version } = require("./package.json"); if (process.env.RELEASE_TAG !== `v${version}`) { throw new Error(`release tag ${process.env.RELEASE_TAG} does not match v${version}`) }'
 
       - name: Install the pinned OpenCode V2 runtime
         shell: bash

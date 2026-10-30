@@ -2,6 +2,18 @@
 
 All notable changes to this project are documented in this file.
 
+## [Unreleased]
+
+### Removed
+
+- Removed npm publication and GitHub release automation, including the opt-in variable, OIDC
+  write permission, publishing instructions, and release-specific CI inputs and checks.
+
+### Changed
+
+- Marked the package private to prevent npm publication while retaining GitHub installation
+  and local installed-artifact tests.
+
 ## [2.0.0] - 2026-10-30
 
 ### Breaking
