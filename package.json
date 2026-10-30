@@ -1,6 +1,6 @@
 {
   "name": "myugen-skills",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "private": true,
   "description": "OpenCode V2 plugin for Myugen's organizational skills and workspace commands.",
   "type": "module",

@@ -1,7 +1,7 @@
 {
   "name": "myugen-skills",
   "description": "Personal skills for organizational knowledge, safe Git commits, and multirepository workspaces.",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "author": {
     "name": "Miguel Ignacio Cabrera San Gil"
   },

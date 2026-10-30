@@ -4,6 +4,8 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-10-30
+
 ### Added
 
 - Added optional hub skill defaults with `name`, local `path`, and contextual `when` criteria,
