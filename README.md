@@ -23,6 +23,21 @@ Code users can install every skill in one step instead of symlinking each one by
 
 _New skills get added here as the hub grows — see [Adding a skill](#adding-a-skill)._
 
+## Other plugins
+
+The marketplace also lists plugins that install on their own, outside the `myugen-skills` plugin:
+
+| Plugin | What it does |
+|--------|--------------|
+| [`change-maps`](./plugins/change-maps) | Visual maps of code changes, so developers get the context of a pull request without reading walls of text. Skills: `pr-flow-review`. |
+
+```
+/plugin install change-maps@myugen-skills
+```
+
+Their skills are Claude Code plugins only: they are not part of the OpenCode adapter or of the
+`skills/index.json` catalog.
+
 ## Using these skills
 
 The skills under `skills/` are the source of truth in this repo. How they get picked up

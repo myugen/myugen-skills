@@ -1,0 +1,127 @@
+{
+  "lang": "en",
+  "title": "LIB-219 · Renew a loan once",
+  "description": "Flows and components touched by library-api PR #412 (LIB-219), the design it follows and the review, with each comment pinned on the sequence diagram.",
+  "headline": "Members can renew a loan once, and an unknown loan answers 404",
+  "pr": {
+    "number": 412,
+    "url": "https://github.com/acme/library-api/pull/412",
+    "ticket": "LIB-219",
+    "branch": "LIB-219-renew-once",
+    "commit": "c0ffee1",
+    "author": "Sam Rivera",
+    "state": "Open · 1 approval",
+    "ci": "green",
+    "snapshot": "2026-01-15"
+  },
+  "lead_html": "Members asked to extend their loans from the app. <code>POST /v2/loans/{loan_id}/renew</code> already existed but renewed without limits. The PR allows one renewal per loan, refuses it while another member holds the book, and answers 404 instead of 500 for an unknown loan.",
+  "stats": [
+    {"value": "9", "label": "files · +214 / −12"},
+    {"value": "1", "label": "flow touched: loan renewal"},
+    {"value": "3 + 4", "label": "new + modified components"},
+    {"value": "0", "label": "new queries"},
+    {"value": "1 + 1", "label": "findings open + resolved"}
+  ],
+  "flow_intro_html": "Sequence diagram of <code>POST /v2/loans/{loan_id}/renew</code>.",
+  "diagrams": [
+    {
+      "id": "renew",
+      "box_legend": "New path: only when the loan does not exist",
+      "aria": "Sequence diagram of a loan renewal with the new renewal rules and the 404 for an unknown loan",
+      "lifelines": [
+        {"id": "cli", "name": "Member app", "lines": ["Member app"], "sub": "client", "st": "ext"},
+        {"id": "view", "name": "RenewLoanView", "lines": ["RenewLoanView"], "sub": "api · loans", "st": "mod"},
+        {"id": "auth", "name": "MemberAuthorizer", "lines": ["Member", "Authorizer"], "sub": "api · auth", "st": "old"},
+        {"id": "hdl", "name": "RenewLoanCommandHandler", "lines": ["RenewLoan", "CommandHandler"], "sub": "application", "st": "mod"},
+        {"id": "policy", "name": "RenewalPolicy", "lines": ["RenewalPolicy"], "sub": "domain · loans", "st": "new"},
+        {"id": "holds", "name": "HoldsFinder", "lines": ["HoldsFinder"], "sub": "DB", "st": "old"},
+        {"id": "repo", "name": "LoanRepository", "lines": ["LoanRepository"], "sub": "DB", "st": "mod"},
+        {"id": "bus", "name": "EventBus", "lines": ["EventBus"], "sub": "events", "st": "old"},
+        {"id": "errh", "name": "loan_not_found_handler", "lines": ["loan_not_found", "_handler"], "sub": "api · errors", "st": "new"}
+      ],
+      "messages": [
+        {"section": "ENTRY"},
+        {"id": "entry", "from": "cli", "to": "view", "label": "POST /v2/loans/{loan_id}/renew", "st": "old", "detail": "Existing endpoint. The path and the request body do not change.", "src": "renew_loan_view.py:21"},
+        {"id": "authz", "from": "view", "to": "auth", "label": "member owns the loan?", "code": "no → 403", "st": "old", "detail": "Unchanged. A member can only renew their own loans.", "src": "renew_loan_view.py:24"},
+        {"id": "dispatch", "from": "view", "to": "hdl", "label": "RenewLoanCommand(loan_id)", "st": "old", "detail": "The view sends the command and maps the domain errors to responses.", "src": "renew_loan_view.py:27-35"},
+        {"section": "RENEWAL RULES"},
+        {"id": "load", "from": "hdl", "to": "repo", "label": "get(loan_id)", "code": "missing → step 11", "st": "mod", "detail": "Now raises LoanNotFound when the loan does not exist, instead of letting DoesNotExist reach the API.", "src": "loan_repository.py:30-34"},
+        {"id": "check", "from": "hdl", "to": "policy", "label": "can_renew(loan)", "st": "new", "detail": "New domain policy with both renewal rules. It returns the reason when it refuses.", "src": "renew_loan_command_handler.py:19 · renewal_policy.py:9"},
+        {"id": "holds", "from": "policy", "to": "holds", "label": "has_active_hold(book_id)", "code": "hold → 409", "st": "old", "detail": "Existing finder. A hold by another member blocks the renewal with book_on_hold.", "src": "renewal_policy.py:13"},
+        {"id": "once", "from": "policy", "to": "policy", "label": "loan.renewals < 1", "code": "renewed → 409", "st": "new", "detail": "Reads the counter from the loan loaded at step 4. A second renewal answers renewal_limit.", "src": "renewal_policy.py:18-21"},
+        {"id": "save", "from": "hdl", "to": "repo", "label": "save(loan) · due_date + 14 days, renewals + 1", "st": "mod", "detail": "Plain save of the whole row. Nothing locks the row between step 4 and this write.", "src": "renew_loan_command_handler.py:24-26"},
+        {"id": "event", "from": "hdl", "to": "bus", "label": "LoanRenewed(loan_id, due_date)", "st": "new", "detail": "New event. The notifications service sends the member the new due date.", "src": "renew_loan_command_handler.py:27"},
+        {"id": "resp-200", "from": "view", "to": "cli", "label": "200 {loan} · with renewals", "st": "mod", "ret": true, "detail": "Same body as before plus the renewals counter.", "src": "renew_loan_view.py:36"},
+        {"section": "Only when the loan does not exist", "box": "hdl"},
+        {"id": "raise", "from": "hdl", "to": "hdl", "label": "raise LoanNotFound(loan_id)", "st": "new", "detail": "New domain exception, raised by the repository at step 4.", "src": "loan_not_found.py:4"},
+        {"id": "map", "from": "view", "to": "errh", "label": "on_exception → registered handler", "st": "new", "detail": "The handler is registered once on the API, so every loan endpoint gets the same 404.", "src": "urls.py:18"},
+        {"id": "resp-404", "from": "errh", "to": "cli", "label": "404 {error: loan_not_found}", "code": "404", "st": "new", "ret": true, "detail": "Before the PR this case answered 500.", "src": "loan_not_found_handler.py:9"}
+      ],
+      "activations": [
+        {"lifeline": "view", "from": "entry", "to": "resp-200"},
+        {"lifeline": "hdl", "from": "dispatch", "to": "event"}
+      ]
+    }
+  ],
+  "components": [
+    {"band": "API · loans", "items": [
+      {"name": "RenewLoanView", "st": "mod", "desc_html": "Maps the two refusals to 409 with their codes."},
+      {"name": "loan_not_found_handler", "st": "new", "desc_html": "Turns <code>LoanNotFound</code> into 404 for every loan endpoint.", "findings": ["E2"]},
+      {"name": "urls.py", "st": "mod", "desc_html": "Registers the handler on the API.", "findings": ["E2"]}
+    ]},
+    {"band": "Application and domain", "items": [
+      {"name": "RenewLoanCommandHandler", "st": "mod", "desc_html": "Loads, asks the policy, saves and publishes.", "findings": ["E1"]},
+      {"name": "RenewalPolicy", "st": "new", "desc_html": "Holds both renewal rules.", "findings": ["E1"]},
+      {"name": "LoanRenewed", "st": "new", "desc_html": "Event with the loan id and the new due date."},
+      {"name": "Loan · renewals", "st": "mod", "desc_html": "New counter, default 0, with its migration."}
+    ]},
+    {"band": "Storage, events and consumers", "items": [
+      {"name": "LoanRepository", "st": "mod", "desc_html": "Raises <code>LoanNotFound</code>.", "findings": ["E1", "E2"]},
+      {"name": "HoldsFinder", "st": "old", "desc_html": "Unchanged."},
+      {"name": "EventBus", "st": "old", "desc_html": "Unchanged."},
+      {"name": "notifications-service", "st": "ext", "desc_html": "Consumes <code>LoanRenewed</code>."}
+    ]}
+  ],
+  "sections_before_review": [
+    {"id": "design", "title": "Design it follows", "nav": "Design", "html": "<div class=\"grid2\">\n<div class=\"card\"><h3>Rules in one domain policy</h3><ul>\n<li>The handler loads the loan and asks <code>RenewalPolicy</code>. The policy holds both rules, so the view and the handler stay free of them.</li>\n<li>A hold by another member wins over the renewal. The policy asks <code>HoldsFinder</code>, which already existed.</li>\n<li>The handler saves the new due date and the counter, then publishes <code>LoanRenewed</code>.</li>\n</ul></div>\n<div class=\"card\"><h3>Contract with the app</h3><div class=\"tw\"><table>\n<tr><th>Case</th><th>Before</th><th>After</th></tr>\n<tr><td>Renewal allowed</td><td>200</td><td>200, with <code>renewals</code></td></tr>\n<tr><td>Already renewed</td><td>200, renewed again</td><td>409 · <code>renewal_limit</code></td></tr>\n<tr><td>Book on hold</td><td>200</td><td>409 · <code>book_on_hold</code></td></tr>\n<tr><td>Unknown loan</td><td>500</td><td>404 · <code>loan_not_found</code></td></tr>\n</table></div>\n<p class=\"note mt\">The member app already shows any 409 message from the API, so no app release is needed.</p></div>\n</div>"}
+  ],
+  "review": {
+    "sub_html": "Static review of the diff against <code>main</code>, without running the tests. One new finding, and the reviewer's thread is resolved.",
+    "checked": [
+      "The migration adds <code>renewals</code> with default 0, so every existing loan can renew once.",
+      "<code>LoanRenewed</code> carries only ids and the new due date, and its consumer already reads <code>due_date</code>.",
+      "Both 409 codes are in the OpenAPI schema with an example."
+    ],
+    "outside_diff_html": "<code>HoldsFinder</code> counts expired holds as active. The PR does not change it, but it can refuse a renewal that should pass."
+  },
+  "findings": [
+    {
+      "id": "E1",
+      "sev": "media",
+      "status": "Open",
+      "title": "Two parallel renewals can both pass the once-only check",
+      "where": "renewal_policy.py:18",
+      "state_html": "Raised in this review. Not posted yet.",
+      "what_html": "<code>RenewalPolicy</code> reads <code>loan.renewals</code> from the row loaded at step 4, and the handler writes it back later with a plain <code>save()</code>. Nothing locks the row between the read and the write.",
+      "impact_html": "A member taps Renew twice on a slow connection. Both requests load the loan with <code>renewals = 0</code>, both pass the check and both save. The due date moves 28 days instead of 14, and two <code>LoanRenewed</code> events go out.",
+      "fix_html": "Load the loan with <code>select_for_update()</code> inside the transaction, or save with a conditional update (<code>WHERE renewals = 0</code>) and answer 409 when no row changes. A test with two concurrent requests would cover it.",
+      "anchors": [{"lifelines": ["hdl", "policy", "repo"], "steps": ["load", "once", "save"]}]
+    },
+    {
+      "id": "E2",
+      "sev": "ok",
+      "status": "Resolved",
+      "title": "An unknown loan answered 500",
+      "where": "loan_not_found_handler.py:9",
+      "url": "https://github.com/acme/library-api/pull/412#discussion_r1002",
+      "state_html": "Raised by Alex Doe. Fixed in <code>c0ffee1</code>, thread resolved.",
+      "what_html": "<code>LoanRepository.get</code> let <code>DoesNotExist</code> reach the generic error handler.",
+      "impact_html": "<code>POST /v2/loans/999/renew</code> with an id that does not exist answered 500 and alerted the on-call channel.",
+      "fix_html": "The repository raises <code>LoanNotFound</code>, and a handler registered on the API maps it to 404 with code <code>loan_not_found</code>.",
+      "anchors": [{"lifelines": ["repo", "hdl", "errh"], "steps": ["raise", "map", "resp-404"]}]
+    }
+  ],
+  "sections_after_review": [
+    {"id": "tests", "title": "Tests in the PR", "nav": "Tests", "html": "<div class=\"grid2\">\n<div class=\"card\"><h3>Unit and integration</h3><div class=\"tw\"><table>\n<tr><th>File</th><th>Type</th><th>Lines</th></tr>\n<tr><td><code>test_renewal_policy.py</code> (new)</td><td>Unit</td><td>+64</td></tr>\n<tr><td><code>test_renew_loan_command_handler.py</code></td><td>Unit</td><td>+41</td></tr>\n<tr><td><code>test_renew_loan_view.py</code></td><td>Integration</td><td>+38</td></tr>\n</table></div></div>\n<div class=\"card\"><h3>Acceptance criteria</h3><div class=\"tw\"><table>\n<tr><th>Criterion</th><th>Covered by</th></tr>\n<tr><td>A loan renews once</td><td><span class=\"pill new\">covered</span> policy and view tests</td></tr>\n<tr><td>A hold blocks the renewal</td><td><span class=\"pill new\">covered</span> policy test</td></tr>\n<tr><td>An unknown loan answers 404</td><td><span class=\"pill new\">covered</span> view test</td></tr>\n<tr><td>Two parallel renewals renew once</td><td><span class=\"pill mod\">missing</span> see E1</td></tr>\n</table></div></div>\n</div>"}
+  ]
+}

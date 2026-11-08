@@ -1,6 +1,6 @@
 {
   "name": "myugen-skills",
-  "description": "Personal skills for organizational knowledge, safe Git commits, and multirepository workspaces.",
+  "description": "Personal skills for organizational knowledge, multirepository workspaces, and visual maps of code changes.",
   "owner": {
     "name": "Miguel Ignacio Cabrera San Gil",
     "email": "miguelcabsan@gmail.com"
@@ -11,6 +11,12 @@
       "source": ".",
       "description": "Personal skills for organizational knowledge, safe Git commits, and multirepository workspaces.",
       "version": "2.1.0"
+    },
+    {
+      "name": "change-maps",
+      "source": "./plugins/change-maps",
+      "description": "Visual maps of code changes, so developers get the context of a pull request without reading walls of text.",
+      "version": "0.1.0"
     }
   ]
 }

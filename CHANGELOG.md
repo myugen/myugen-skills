@@ -4,6 +4,14 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- Added the `change-maps` plugin to the marketplace, installed on its own with
+  `/plugin install change-maps@myugen-skills`. Its first skill, `pr-flow-review`, reviews a pull
+  request of any GitHub repository and publishes an interactive artifact with one sequence diagram
+  per touched flow and every finding pinned on it. It publishes a Claude artifact by default, or to
+  an Artifact Manager set in `${XDG_CONFIG_HOME:-$HOME/.config}/change-maps/config.json`.
+
 ## [2.1.0] - 2026-10-30
 
 ### Added
