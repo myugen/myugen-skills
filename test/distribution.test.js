@@ -20,6 +20,18 @@ test("keeps package and Claude plugin versions synchronized", async () => {
   assert.equal(packageVersion, marketplaceVersion)
 })
 
+test("keeps every marketplace plugin in sync with its manifest", async () => {
+  const root = new URL("../", import.meta.url)
+  const marketplace = JSON.parse(await readFile(new URL(".claude-plugin/marketplace.json", root), "utf8"))
+  assert.equal(marketplace.plugins[0].name, "myugen-skills")
+  for (const entry of marketplace.plugins) {
+    const source = entry.source.replace(/\/?$/, "/")
+    const manifest = JSON.parse(await readFile(new URL(`${source}.claude-plugin/plugin.json`, root), "utf8"))
+    assert.equal(manifest.name, entry.name, entry.source)
+    assert.equal(manifest.version, entry.version, entry.name)
+  }
+})
+
 test("keeps the generated skill catalog current", () => {
   const result = spawnSync("python3", ["scripts/generate-skill-index.py", "--check"], {
     cwd: new URL("../", import.meta.url),

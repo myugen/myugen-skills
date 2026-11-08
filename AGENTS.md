@@ -15,6 +15,7 @@ The repo root also doubles as a **Claude Code plugin**:
 commands/              Claude-only interactive adapters for plugin workflows
 opencode/plugin.js     Git-distributed OpenCode V2 adapter for skills and commands
 skills/                auto-discovered by the plugin — one folder per skill
+plugins/               other Claude Code plugins listed in marketplace.json, one folder each
 hooks/                 Claude-only layer: deterministic session capture (see hooks/README.md)
 templates/              scaffolding for authoring new skills, not itself a skill
 ```
@@ -22,6 +23,12 @@ templates/              scaffolding for authoring new skills, not itself a skill
 Skills under `skills/` are auto-discovered by the plugin — adding a new folder there is
 enough, no manifest edit required. `templates/skill-template/` intentionally lives outside
 `skills/` so it isn't picked up as a real (placeholder) skill.
+
+**Each folder under `plugins/` is a self-contained Claude Code plugin** with its own
+`.claude-plugin/plugin.json` and `skills/`. Its skills are not part of the `myugen-skills` plugin,
+the OpenCode adapter or `skills/index.json`. Keep `myugen-skills` as the first marketplace entry, and
+keep each plugin's version equal in its `plugin.json` and its marketplace entry (the distribution
+test checks both). Their skills follow the same `SKILL.md` conventions as the ones under `skills/`.
 
 **`hooks/` and its `scripts/` are Claude-specific**, unlike everything under `skills/`. They
 exist because skills are model-invoked (Claude decides whether to use one) and hooks are not

@@ -1,0 +1,8 @@
+{
+  "defaultOwner": "acme",
+  "artifactManager": {
+    "url": "https://artifacts.example.com",
+    "skill": "artifact-tools:artifact-management",
+    "allowedLinkHosts": ["github.com/acme", "docs.google.com"]
+  }
+}

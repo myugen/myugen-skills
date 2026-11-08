@@ -1,0 +1,10 @@
+{
+  "name": "change-maps",
+  "description": "Visual maps of code changes, so developers get the context of a pull request without reading walls of text.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Miguel Ignacio Cabrera San Gil"
+  },
+  "homepage": "https://github.com/myugen/myugen-skills/tree/main/plugins/change-maps",
+  "repository": "https://github.com/myugen/myugen-skills"
+}
